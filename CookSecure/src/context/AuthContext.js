@@ -1,6 +1,6 @@
 import { createContext, useState, useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { showNotification } from '../utils/notification'
+import toast from 'react-hot-toast'
 
 const AuthContext = createContext()
 
@@ -17,14 +17,14 @@ export const AuthProvider = ({ children }) => {
       role: email.includes('admin') ? 'admin' : 'user'
     }
     setUser(mockUser)
-    showNotification('Success', 'Logged in successfully!')
+    toast.success('Logged in successfully!')
     navigate('/recipes')
     return mockUser
   }
 
   const logout = () => {
     setUser(null)
-    showNotification('Success', 'Logged out successfully!')
+    toast.success('Logged out successfully!')
     navigate('/login')
   }
 
@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
       role: 'user'
     }
     setUser(mockUser)
-    showNotification('Success', 'Registered successfully!')
+    toast.success('Registered successfully!')
     navigate('/recipes')
     return mockUser
   }

@@ -14,6 +14,5 @@ export default function RoleRoute({ allowedRoles }) {
     toast.error('You dont have permission to access this page!')
     return <Navigate to="/" />
   }
-
   return <Outlet />
 }

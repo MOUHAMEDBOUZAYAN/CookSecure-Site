@@ -1,55 +1,74 @@
-import { createContext, useState, useContext } from 'react'
+import { createContext, useState, useContext, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { login, register, getUserById } from '../services/auth'
 
 const AuthContext = createContext()
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem('user')
-    return storedUser ? JSON.parse(storedUser) : null
-  })
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
-  const login = (email, password) => {
-    // Mock login
-    const mockUser = {
-      id: '1',
-      email,
-      name: 'Test User',
-      role: email.includes('admin') ? 'admin' : 'user'
+  useEffect(() => {
+    const checkAuth = async () => {
+      const userId = sessionStorage.getItem('userId')
+      if (userId) {
+        try {
+          const userData = await getUserById(userId)
+          setUser(userData)
+        } catch (error) {
+          console.error('Failed to fetch user:', error)
+          sessionStorage.removeItem('userId')
+        }
+      }
+      setLoading(false)
     }
-    setUser(mockUser)
-    localStorage.setItem('user', JSON.stringify(mockUser))
-    toast.success('Logged in successfully!')
-    navigate('/recipes')
-    return mockUser
+    
+    checkAuth()
+  }, [])
+
+  const loginUser = async (email, password) => {
+    try {
+      const userData = await login(email, password)
+      setUser(userData)
+      sessionStorage.setItem('userId', userData.id)
+      toast.success('Logged in successfully!')
+      navigate('/recipes')
+    } catch (error) {
+      toast.error(error.message)
+      throw error
+    }
+  }
+
+  const registerUser = async (email, password, name) => {
+    try {
+      const userData = await register(email, password, name)
+      setUser(userData)
+      sessionStorage.setItem('userId', userData.id)
+      toast.success('Registered successfully!')
+      navigate('/recipes')
+    } catch (error) {
+      toast.error(error.message)
+      throw error
+    }
   }
 
   const logout = () => {
     setUser(null)
-    localStorage.removeItem('user')
+    sessionStorage.removeItem('userId')
     toast.success('Logged out successfully!')
     navigate('/login')
   }
 
-  const register = (email, password, name) => {
-    // Mock registration
-    const mockUser = {
-      id: '2',
-      email,
-      name,
-      role: 'user'
-    }
-    setUser(mockUser)
-    localStorage.setItem('user', JSON.stringify(mockUser))
-    toast.success('Registered successfully!')
-    navigate('/recipes')
-    return mockUser
-  }
-
   return (
-    <AuthContext.Provider value={{ user, login, logout, register }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      loading,
+      login: loginUser, 
+      logout, 
+      register: registerUser 
+    }}>
       {children}
     </AuthContext.Provider>
   )

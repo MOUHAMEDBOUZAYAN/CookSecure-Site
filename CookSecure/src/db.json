@@ -1,0 +1,42 @@
+{
+    "users": [
+      {
+        "id": 1,
+        "email": "admin@example.com",
+        "password": "admin123",
+        "name": "Admin User",
+        "role": "admin"
+      },
+      {
+        "id": 2,
+        "email": "user@example.com",
+        "password": "user123",
+        "name": "Regular User",
+        "role": "user"
+      }
+    ],
+    "recipes": [
+      {
+        "id": 1,
+        "title": "Pasta Carbonara",
+        "author": "Chef Mario",
+        "description": "Classic Italian pasta with eggs, cheese, pancetta, and pepper",
+        "ingredients": ["Spaghetti", "Eggs", "Pancetta", "Parmesan", "Black pepper"],
+        "instructions": "1. Cook pasta\n2. Fry pancetta\n3. Mix eggs with cheese\n4. Combine everything",
+        "prepTime": "15 mins",
+        "cookTime": "15 mins",
+        "userId": 1
+      },
+      {
+        "id": 2,
+        "title": "Vegetable Stir Fry",
+        "author": "Chef Luigi",
+        "description": "Quick and healthy vegetable stir fry with tofu",
+        "ingredients": ["Mixed vegetables", "Tofu", "Soy sauce", "Garlic", "Ginger"],
+        "instructions": "1. Chop vegetables\n2. Press tofu\n3. Stir fry everything\n4. Add sauce",
+        "prepTime": "20 mins",
+        "cookTime": "10 mins",
+        "userId": 2
+      }
+    ]
+  }

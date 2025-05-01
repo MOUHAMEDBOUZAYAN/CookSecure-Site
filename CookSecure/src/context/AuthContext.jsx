@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect } from 'react'
+import { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { login, register, getUserById } from '../services/auth'

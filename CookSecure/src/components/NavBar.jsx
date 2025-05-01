@@ -5,10 +5,10 @@ export default function Navbar() {
   const { user, logout } = useAuth()
 
   return (
-    <nav className="bg-blue-600 text-white p-4">
-      <div className="container mx-auto flex justify-between items-center">
-        <Link to="/" className="text-xl font-bold">Cooking Platform</Link>
-        <div className="flex space-x-4">
+    <nav className="bg-blue-600 text-white p-4 shadow-md">
+      <div className="container mx-auto flex flex-col md:flex-row justify-between items-center">
+        <Link to="/" className="text-xl font-bold mb-2 md:mb-0">Cooking Platform</Link>
+        <div className="flex flex-wrap justify-center gap-4">
           <Link to="/recipes" className="hover:underline">Recipes</Link>
           {user ? (
             <>
@@ -17,7 +17,12 @@ export default function Navbar() {
               {user.role === 'admin' && (
                 <Link to="/admin" className="hover:underline">Admin</Link>
               )}
-              <button onClick={logout} className="hover:underline">Logout</button>
+              <button 
+                onClick={logout} 
+                className="hover:underline"
+              >
+                Logout
+              </button>
             </>
           ) : (
             <>

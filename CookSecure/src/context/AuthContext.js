@@ -5,7 +5,10 @@ import toast from 'react-hot-toast'
 const AuthContext = createContext()
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem('user')
+    return storedUser ? JSON.parse(storedUser) : null
+  })
   const navigate = useNavigate()
 
   const login = (email, password) => {
@@ -17,6 +20,7 @@ export const AuthProvider = ({ children }) => {
       role: email.includes('admin') ? 'admin' : 'user'
     }
     setUser(mockUser)
+    localStorage.setItem('user', JSON.stringify(mockUser))
     toast.success('Logged in successfully!')
     navigate('/recipes')
     return mockUser
@@ -24,6 +28,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null)
+    localStorage.removeItem('user')
     toast.success('Logged out successfully!')
     navigate('/login')
   }
@@ -37,6 +42,7 @@ export const AuthProvider = ({ children }) => {
       role: 'user'
     }
     setUser(mockUser)
+    localStorage.setItem('user', JSON.stringify(mockUser))
     toast.success('Registered successfully!')
     navigate('/recipes')
     return mockUser

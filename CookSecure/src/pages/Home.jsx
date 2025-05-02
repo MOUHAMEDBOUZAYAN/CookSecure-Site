@@ -3,7 +3,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useEffect, useState } from 'react'
 import { getRecipes } from '../services/recipes'
 import RecipeCard from '../components/RecipeCard'
-import image1 from '../assets/images/Home.jpg'
+import HeroSection from '../components/HeroSection'
 
 export default function Home() {
   const { user } = useAuth()
@@ -51,119 +51,12 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Hero Section with food image */}
-      <div className="bg-blue-50 py-16">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center">
-            <div className="md:w-1/2 mb-10 md:mb-0 md:pr-10">
-              {/* Hot Recipes Badge */}
-              <div className="mb-6">
-                <span className="bg-white px-4 py-2 rounded-full inline-flex items-center shadow-sm">
-                  <span className="bg-orange-100 text-orange-800 p-1 rounded-full mr-2">🔥</span>
-                  <span className="font-medium">Hot Recipes</span>
-                </span>
-              </div>
-              
-              {/* Recipe Title & Description */}
-              <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
-                Spicy delicious<br />chicken wings
-              </h1>
-              <p className="text-gray-600 mb-8">
-                Lorem ipsum dolor sit amet, consectetuipisicing elit, sed do eiusmod
-                tempor incididunt ut labore et dolore magna aliqut enim ad minim
-              </p>
-              
-              {/* Cooking Info */}
-              <div className="flex mb-8">
-                <div className="flex items-center bg-white px-3 py-2 rounded-full mr-4 shadow-sm">
-                  <div className="p-1 bg-gray-100 rounded-full mr-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                  </div>
-                  <span>30 Minutes</span>
-                </div>
-                
-                <div className="flex items-center bg-white px-3 py-2 rounded-full shadow-sm">
-                  <div className="p-1 bg-gray-100 rounded-full mr-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
-                      <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
-                      <line x1="6" y1="1" x2="6" y2="4"></line>
-                      <line x1="10" y1="1" x2="10" y2="4"></line>
-                      <line x1="14" y1="1" x2="14" y2="4"></line>
-                    </svg>
-                  </div>
-                  <span>Chicken</span>
-                </div>
-              </div>
-              
-              {/* Author Info */}
-              <div className="flex items-center mb-8">
-                <div className="w-12 h-12 overflow-hidden rounded-full mr-3">
-                  <img src="/api/placeholder/100/100" alt="John Smith" className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <p className="font-medium">John Smith</p>
-                  <p className="text-gray-500 text-sm">15 March 2022</p>
-                </div>
-              </div>
-              
-              {/* View Recipes Button */}
-              <div>
-                <Link to="/recipes" className="inline-flex items-center bg-black text-white px-6 py-3 rounded-full font-medium transition-colors">
-                  View Recipes
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2">
-                    <path d="M5 12h14"></path>
-                    <path d="M12 5l7 7-7 7"></path>
-                  </svg>
-                </Link>
-              </div>
-            </div>
-            
-            {/* Right side with recipe image */}
-            <div className="md:w-1/2 relative">
-              <div className="relative">
-                {/* Main Dish Image */}
-                <div className="rounded-full overflow-hidden max-w-md mx-auto relative z-10">
-                  <img 
-                    src={image1 || "/api/placeholder/600/600"} 
-                    alt="Spicy chicken wings with sauce" 
-                    className="w-full aspect-square object-cover"
-                  />
-                </div>
-                
-                {/* Handpicked Recipe Badge */}
-                <div className="absolute top-1/4 left-0 transform -translate-x-1/2 z-20">
-                  <div className="bg-black text-white rounded-full p-3 w-24 h-24 flex flex-col items-center justify-center">
-                    <div className="bg-white text-black rounded-full p-1 mb-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
-                      </svg>
-                    </div>
-                    <span className="text-xs text-center leading-tight">HANDPICKED RECIPES</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Recipe carousel indicators - shown only when there are multiple recipes */}
-              {featuredRecipes.length > 1 && (
-                <div className="flex justify-center mt-6 space-x-2">
-                  {featuredRecipes.slice(0, 4).map((_, idx) => (
-                    <button 
-                      key={idx}
-                      onClick={() => setActiveRecipeIndex(idx)} 
-                      className={`w-3 h-3 rounded-full ${activeRecipeIndex === idx ? 'bg-blue-500' : 'bg-gray-300'}`}
-                      aria-label={`Go to recipe ${idx + 1}`}
-                    ></button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Use the separate HeroSection component */}
+      <HeroSection 
+        featuredRecipes={featuredRecipes}
+        activeRecipeIndex={activeRecipeIndex}
+        setActiveRecipeIndex={setActiveRecipeIndex}
+      />
 
       {/* Categories Section */}
       <div className="container mx-auto px-4 py-16">
@@ -206,7 +99,7 @@ export default function Home() {
               <div key={recipe.id} className="bg-white rounded-xl shadow-sm hover:shadow-md overflow-hidden transition-shadow">
                 <div className="aspect-video overflow-hidden relative">
                   <img 
-                    src={`/api/placeholder/400/250`} 
+                    src={recipe.image || `/api/placeholder/400/250`} 
                     alt={recipe.title} 
                     className="w-full h-full object-cover"
                   />
@@ -312,7 +205,7 @@ export default function Home() {
               <div key={recipe.id} className="overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
                 <div className="aspect-square overflow-hidden">
                   <img 
-                    src={`/api/placeholder/250/250`} 
+                    src={recipe.image || `/api/placeholder/250/250`} 
                     alt={recipe.title} 
                     className="w-full h-full object-cover hover:scale-105 transition-transform"
                   />

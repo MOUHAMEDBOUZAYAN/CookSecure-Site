@@ -39,7 +39,7 @@ const HeroSection = ({ recipe }) => {
             <p className="text-lg text-gray-700 mb-6">
               {recipe.strInstructions 
                 ? recipe.strInstructions.split('.')[0] + '.' 
-                : 'Spicy delicious chicken wings'}
+                : recipe.description || 'Delicious recipe waiting to be explored'}
             </p>
             
             <div className="flex flex-wrap gap-4">
@@ -63,7 +63,7 @@ const HeroSection = ({ recipe }) => {
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = '/assets/images/default-recipe.jpg';
+                  e.target.src = 'https://placehold.co/600x400/orange/white?text=Recipe';
                 }} 
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>

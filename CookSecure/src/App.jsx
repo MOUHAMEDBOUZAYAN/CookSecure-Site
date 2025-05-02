@@ -2,6 +2,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import Home from './pages/Home';
 import RecipeDetail from './pages/recipes/RecipeDetail';
 import RecipeList from './pages/recipes/RecipeList';
@@ -13,18 +14,21 @@ import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="app">
+        <div className="flex flex-col min-h-screen">
           <Navbar />
-          <main className="main-content">
+          <ScrollToTop />
+          <main className="flex-grow">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/recipe/:id" element={<RecipeDetail />} />
               <Route path="/category/:category" element={<RecipeList />} />
+              <Route path="/recipes" element={<RecipeList />} />
               <Route path="/search" element={<RecipeList />} />
               
               {/* Protected routes */}
@@ -61,11 +65,7 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
-          <footer className="app-footer">
-            <div className="container">
-              <p>&copy; {new Date().getFullYear()} Recipe Platform. All rights reserved.</p>
-            </div>
-          </footer>
+          <Footer />
         </div>
       </AuthProvider>
     </Router>

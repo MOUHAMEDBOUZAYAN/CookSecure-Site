@@ -1,4 +1,4 @@
-// src/components/RecipeCard.jsx
+// Mise à jour des images placeholder dans RecipeCard.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -24,7 +24,7 @@ const RecipeCard = ({ recipe }) => {
           className="w-full h-full object-cover"
           onError={(e) => {
             e.target.onerror = null;
-            e.target.src = '/assets/images/default-recipe.jpg';
+            e.target.src = 'https://placehold.co/400x300/orange/white?text=Recipe';
           }} 
         />
         {category && (

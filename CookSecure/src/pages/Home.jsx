@@ -1,6 +1,9 @@
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 
 export default function Home() {
+  const { user } = useAuth()
+
   return (
     <div className="text-center py-12">
       <h1 className="text-4xl font-bold mb-6">Welcome to Cooking Platform</h1>
@@ -14,12 +17,14 @@ export default function Home() {
         >
           Browse Recipes
         </Link>
-        <Link 
-          to="/add-recipe" 
-          className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-colors"
-        >
-          Share Your Recipe
-        </Link>
+        {user && (
+          <Link 
+            to="/add-recipe" 
+            className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-colors"
+          >
+            Share Your Recipe
+          </Link>
+        )}
       </div>
     </div>
   )

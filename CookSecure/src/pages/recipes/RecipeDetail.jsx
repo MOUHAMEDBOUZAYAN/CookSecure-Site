@@ -1,7 +1,7 @@
 // src/pages/RecipeDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getRecipeById, getRandomRecipes, formatRecipeData } from '../services/recipes';
+import { getRecipeById, getRandomRecipes, formatRecipeData } from '../../services/recipes';
 
 const RecipeDetail = () => {
   const { id } = useParams();

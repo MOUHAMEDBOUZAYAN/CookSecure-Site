@@ -28,6 +28,29 @@ export const getRandomRecipes = async (count = 8) => {
   }
 };
 
+
+export const getRecipes = async (params = {}) => {
+  try {
+    const { category, query, limit } = params;
+    
+    // If category is provided, get recipes by category
+    if (category) {
+      return getRecipesByCategory(category);
+    }
+    
+    // If search query is provided, search recipes
+    if (query) {
+      return searchRecipes(query);
+    }
+    
+    // Default: get random recipes
+    return getRandomRecipes(limit || 10);
+  } catch (error) {
+    console.error('Error fetching recipes:', error);
+    return [];
+  }
+};
+
 // Get recipe categories
 export const getCategories = async () => {
   try {

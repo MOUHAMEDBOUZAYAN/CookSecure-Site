@@ -1,75 +1,95 @@
-import { createContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
-import { login, register, getUserById } from '../services/auth'
+// src/context/AuthContext.jsx
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
-export const AuthContext = createContext()
+// Create context
+export const AuthContext = createContext();
 
+// Auth provider component
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const navigate = useNavigate()
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
+  // Check if user is already logged in from localStorage
   useEffect(() => {
-    const checkAuth = async () => {
-      const userId = sessionStorage.getItem('userId')
-      if (userId) {
-        try {
-          const userData = await getUserById(userId)
-          setUser(userData)
-        } catch (error) {
-          console.error('Failed to fetch user:', error)
-          sessionStorage.removeItem('userId')
-        }
-      }
-      setLoading(false)
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
     }
-    
-    checkAuth()
-  }, [])
+    setLoading(false);
+  }, []);
 
-  const loginUser = async (email, password) => {
+  // Login function
+  const login = async (email, password) => {
     try {
-      const userData = await login(email, password)
-      setUser(userData)
-      sessionStorage.setItem('userId', userData.id)
-      toast.success('Logged in successfully!')
-      navigate('/recipes')
+      // For this example, we're simulating authentication
+      // In a real app, this would make an API call to your backend
+      
+      // Simulate API call
+      const userData = {
+        id: '1',
+        name: 'Demo User',
+        email: email,
+        // Don't store password in state
+      };
+      
+      // Save user to localStorage
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      
+      return { success: true };
     } catch (error) {
-      toast.error(error.message)
-      throw error
+      console.error('Login error:', error);
+      return { success: false, error: 'Invalid credentials' };
     }
-  }
+  };
 
-  const registerUser = async (email, password, name) => {
+  // Register function
+  const register = async (name, email, password) => {
     try {
-      const userData = await register(email, password, name)
-      setUser(userData)
-      sessionStorage.setItem('userId', userData.id)
-      toast.success('Registered successfully!')
-      navigate('/recipes')
+      // For this example, we're simulating registration
+      // In a real app, this would make an API call to your backend
+      
+      // Simulate API call
+      const userData = {
+        id: Date.now().toString(),
+        name: name,
+        email: email,
+        // Don't store password in state
+      };
+      
+      // Save user to localStorage
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      
+      return { success: true };
     } catch (error) {
-      toast.error(error.message)
-      throw error
+      console.error('Registration error:', error);
+      return { success: false, error: 'Registration failed' };
     }
-  }
+  };
 
+  // Logout function
   const logout = () => {
-    setUser(null)
-    sessionStorage.removeItem('userId')
-    toast.success('Logged out successfully!')
-    navigate('/login')
-  }
+    localStorage.removeItem('user');
+    setUser(null);
+  };
+
+  // Create the context value
+  const value = {
+    user,
+    login,
+    register,
+    logout,
+    loading
+  };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      loading,
-      login: loginUser, 
-      logout, 
-      register: registerUser 
-    }}>
-      {children}
+    <AuthContext.Provider value={value}>
+      {!loading && children}
     </AuthContext.Provider>
-  )
-}
+  );
+};
+
+// Custom hook moved to src/hooks/useAuth.js
+
+export default AuthContext;

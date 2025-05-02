@@ -1,47 +1,75 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { AuthProvider } from './context/AuthContext'
-import Home from './pages/Home'
-import RecipeList from './pages/recipes/RecipeList'
-import RecipeDetail from './pages/recipes/RecipeDetail'
-import AddRecipe from './pages/recipes/AddRecipe'
-import EditRecipe from './pages/recipes/EditRecipe'
-import Login from './pages/auth/Login'
-import Register from './pages/auth/Register'
-import Profile from './pages/Profile'
-import NotFound from './pages/NotFound'
-import ProtectedRoute from './components/ProtectedRoute'
-import RoleRoute from './components/RoleRoute'
-import Navbar from './components/Navbar'
+// src/App.jsx
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Home from './pages/Home';
+import RecipeDetail from './pages/recipes/RecipeDetail';
+import RecipeList from './pages/recipes/RecipeList';
+import AddRecipe from './pages/recipes/AddRecipe';
+import EditRecipe from './pages/recipes/EditRecipe';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import Profile from './pages/Profile';
+import NotFound from './pages/NotFound';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 
-export default function App() {
+function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="flex flex-col min-h-screen">
+        <div className="app">
           <Navbar />
-          <main className="flex-grow container mx-auto p-4">
+          <main className="main-content">
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/recipes" element={<RecipeList />} />
-              <Route path="/recipes/:id" element={<RecipeDetail />} />
+              <Route path="/recipe/:id" element={<RecipeDetail />} />
+              <Route path="/category/:category" element={<RecipeList />} />
+              <Route path="/search" element={<RecipeList />} />
               
-              <Route element={<ProtectedRoute />}>
-                <Route path="/add-recipe" element={<AddRecipe />} />
-                <Route path="/edit-recipe/:id" element={<EditRecipe />} />
-                <Route path="/profile" element={<Profile />} />
-              </Route>
-
-              <Route element={<RoleRoute allowedRoles={['admin']} />}>
-                <Route path="/admin" element={<div className="p-4">Admin Panel</div>} />
-              </Route>
-
+              {/* Protected routes */}
+              <Route 
+                path="/add-recipe" 
+                element={
+                  <ProtectedRoute>
+                    <AddRecipe />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/edit-recipe/:id" 
+                element={
+                  <ProtectedRoute>
+                    <EditRecipe />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/profile" 
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Auth routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              
+              {/* 404 route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
+          <footer className="app-footer">
+            <div className="container">
+              <p>&copy; {new Date().getFullYear()} Recipe Platform. All rights reserved.</p>
+            </div>
+          </footer>
         </div>
       </AuthProvider>
     </Router>
-  )
+  );
 }
+
+export default App;

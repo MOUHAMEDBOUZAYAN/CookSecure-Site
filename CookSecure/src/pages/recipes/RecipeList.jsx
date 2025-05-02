@@ -1,53 +1,117 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { useAuth } from '../../hooks/useAuth'
-import RecipeCard from '../../components/RecipeCard'
-import { getRecipes } from '../../services/recipes'
-import toast from 'react-hot-toast'
+// src/pages/RecipeList.jsx
+import React, { useState, useEffect } from 'react';
+import { useParams, useLocation, Link } from 'react-router-dom';
+import RecipeCard from '../../components/RecipeCard';
+import { getRecipes, getRecipesByCategory, searchRecipes } from '../../services/recipes';
 
-export default function RecipeList() {
-  const { user } = useAuth()
-  const [recipes, setRecipes] = useState([])
-  const [loading, setLoading] = useState(true)
-
+const RecipeList = () => {
+  const [recipes, setRecipes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { category } = useParams();
+  const location = useLocation();
+  
+  // Get search query from URL if available
+  const queryParams = new URLSearchParams(location.search);
+  const searchQuery = queryParams.get('q');
+  
+  // Set page title based on whether it's a category view or search results
+  const pageTitle = category 
+    ? `${category} Recipes` 
+    : searchQuery 
+      ? `Search Results for "${searchQuery}"` 
+      : 'All Recipes';
+  
   useEffect(() => {
     const fetchRecipes = async () => {
       try {
-        const data = await getRecipes()
-        setRecipes(data)
-      } catch (error) {
-        toast.error('Failed to load recipes')
-        console.error(error)
-      } finally {
-        setLoading(false)
+        setLoading(true);
+        let recipeData;
+        
+        if (category) {
+          // Get recipes by category
+          recipeData = await getRecipesByCategory(category);
+        } else if (searchQuery) {
+          // Get recipes by search query
+          recipeData = await searchRecipes(searchQuery);
+        } else {
+          // Get generic recipes (random in this case)
+          recipeData = await getRecipes();
+        }
+        
+        setRecipes(recipeData);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching recipes:', err);
+        setError('Failed to load recipes. Please try again later.');
+        setLoading(false);
       }
-    }
+    };
     
-    fetchRecipes()
-  }, [])
-
+    fetchRecipes();
+  }, [category, searchQuery]);
+  
   if (loading) {
-    return <div className="text-center py-8">Loading recipes...</div>
-  }
-
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">All Recipes</h1>
-        {user && (
-          <Link 
-            to="/add-recipe" 
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-          >
-            Add New Recipe
-          </Link>
-        )}
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading recipes...</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {recipes.map(recipe => (
-          <RecipeCard key={recipe.id} recipe={recipe} />
-        ))}
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="error-container">
+        <h2>Error</h2>
+        <p>{error}</p>
+        <Link to="/" className="btn">Back to Home</Link>
+      </div>
+    );
+  }
+  
+  if (recipes.length === 0) {
+    return (
+      <div className="empty-results">
+        <div className="container">
+          <h2>{pageTitle}</h2>
+          {searchQuery && (
+            <p>No recipes found matching "{searchQuery}".</p>
+          )}
+          {category && (
+            <p>No recipes found in the {category} category.</p>
+          )}
+          {!searchQuery && !category && (
+            <p>No recipes available at the moment.</p>
+          )}
+          <Link to="/" className="btn">Back to Home</Link>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="recipe-list-page">
+      <div className="container">
+        <h1 className="page-title">{pageTitle}</h1>
+        
+        {searchQuery && (
+          <p className="search-results-count">
+            Found {recipes.length} {recipes.length === 1 ? 'recipe' : 'recipes'} for "{searchQuery}"
+          </p>
+        )}
+        
+        <div className="recipes-grid">
+          {recipes.map(recipe => (
+            <RecipeCard 
+              key={recipe.idMeal || recipe.id} 
+              recipe={recipe} 
+            />
+          ))}
+        </div>
       </div>
     </div>
-  )
-}
+  );
+};
+
+export default RecipeList;

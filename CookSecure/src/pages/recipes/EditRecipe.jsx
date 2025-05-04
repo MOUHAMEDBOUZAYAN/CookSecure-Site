@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { getRecipeById, updateRecipe } from '../../services/recipes';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const EditRecipe = () => {
   const { id } = useParams();
@@ -60,7 +62,7 @@ const EditRecipe = () => {
         
         // Check user authorization - only recipe owner or admin can edit
         if (data.userId !== user?.id && user?.role !== 'admin') {
-          setError('You are not authorized to edit this recipe');
+          toast.error('Vous n\'êtes pas autorisé à modifier cette recette');
           setTimeout(() => navigate('/recipes'), 2000);
           return;
         }
@@ -93,8 +95,8 @@ const EditRecipe = () => {
         
         setLoading(false);
       } catch (error) {
-        setError('Failed to load recipe');
         console.error('Failed to load recipe:', error);
+        toast.error('Échec du chargement de la recette');
         setLoading(false);
       }
     };
@@ -123,13 +125,18 @@ const EditRecipe = () => {
         image: imageUrl
       });
       
-      // Show success message
-      alert('Recipe updated successfully!');
-      navigate(`/recipe/${id}`);
+      // Show success message via toast
+      toast.success('Recette mise à jour avec succès!');
+      
+      // Navigate to recipe detail page
+      setTimeout(() => {
+        navigate(`/recipe/${id}`, { 
+          state: { message: 'Recette mise à jour avec succès!' }
+        });
+      }, 1000);
     } catch (error) {
       console.error('Failed to update recipe:', error);
-      alert('Failed to update recipe. Please try again.');
-    } finally {
+      toast.error('Échec de la mise à jour de la recette. Veuillez réessayer.');
       setIsSubmitting(false);
     }
   };
@@ -162,13 +169,13 @@ const EditRecipe = () => {
     
     // Check if file is an image
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      toast.error('Veuillez sélectionner un fichier image');
       return;
     }
     
     // Check file size (limit to 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image size should be less than 5MB');
+      toast.error('La taille de l\'image doit être inférieure à 5 Mo');
       return;
     }
     
@@ -194,7 +201,7 @@ const EditRecipe = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
-        <p className="ml-3 text-gray-600">Loading recipe...</p>
+        <p className="ml-3 text-gray-600">Chargement de la recette...</p>
       </div>
     );
   }
@@ -205,18 +212,31 @@ const EditRecipe = () => {
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md mb-6">
           <p>{error}</p>
         </div>
-        <p className="text-gray-600 mb-6">Redirecting to recipes page...</p>
+        <p className="text-gray-600 mb-6">Redirection vers la page des recettes...</p>
       </div>
     );
   }
 
   return (
     <div className="bg-gradient-to-b from-orange-50 to-orange-100 py-12 min-h-screen">
+      <ToastContainer 
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
+      
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="px-6 py-8 sm:p-10 border-b border-orange-100">
-            <h1 className="text-3xl font-serif font-bold text-gray-900 mb-2">Edit Recipe</h1>
-            <p className="text-gray-600">Update your culinary masterpiece</p>
+            <h1 className="text-3xl font-serif font-bold text-gray-900 mb-2">Modifier la recette</h1>
+            <p className="text-gray-600">Mettre à jour votre chef-d'œuvre culinaire</p>
           </div>
           
           <form onSubmit={handleSubmit} className="p-6 sm:p-10 space-y-8">
@@ -225,7 +245,7 @@ const EditRecipe = () => {
               <div className="md:col-span-2 space-y-6">
                 <div>
                   <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                    Recipe Title <span className="text-red-500">*</span>
+                    Nom de la recette <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="title"
@@ -234,7 +254,7 @@ const EditRecipe = () => {
                     value={recipe.title}
                     onChange={handleChange}
                     required
-                    placeholder="Give your recipe a catchy name"
+                    placeholder="Donnez un nom accrocheur à votre recette"
                     disabled={isSubmitting}
                     className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm"
                   />
@@ -243,7 +263,7 @@ const EditRecipe = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-                      Category <span className="text-red-500">*</span>
+                      Catégorie <span className="text-red-500">*</span>
                     </label>
                     <select
                       id="category"
@@ -254,7 +274,7 @@ const EditRecipe = () => {
                       disabled={isSubmitting}
                       className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm"
                     >
-                      <option value="">Select a category</option>
+                      <option value="">Sélectionner une catégorie</option>
                       {categories.map((category) => (
                         <option key={category} value={category}>{category}</option>
                       ))}
@@ -263,7 +283,7 @@ const EditRecipe = () => {
                   
                   <div>
                     <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700 mb-1">
-                      Difficulty
+                      Difficulté
                     </label>
                     <select
                       id="difficulty"
@@ -290,7 +310,7 @@ const EditRecipe = () => {
                     value={recipe.description}
                     onChange={handleChange}
                     required
-                    placeholder="Brief description of your recipe"
+                    placeholder="Brève description de votre recette"
                     disabled={isSubmitting}
                     rows="3"
                     className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm"
@@ -300,7 +320,7 @@ const EditRecipe = () => {
               
               <div className="md:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Recipe Image
+                  Image de la recette
                 </label>
                 <div 
                   className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center h-64 flex flex-col items-center justify-center relative overflow-hidden cursor-pointer hover:bg-gray-50 transition-colors"
@@ -310,7 +330,7 @@ const EditRecipe = () => {
                     <>
                       <img 
                         src={previewImage} 
-                        alt="Recipe preview" 
+                        alt="Aperçu de la recette" 
                         className="absolute inset-0 w-full h-full object-cover"
                         onError={(e) => {
                           e.target.onerror = null;
@@ -318,7 +338,7 @@ const EditRecipe = () => {
                         }}
                       />
                       <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
-                        Click to change
+                        Cliquer pour changer
                       </div>
                     </>
                   ) : (
@@ -326,8 +346,8 @@ const EditRecipe = () => {
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      <p className="text-sm text-gray-700 font-medium mb-1">Upload an image</p>
-                      <p className="text-xs text-gray-500">Click to browse or drop an image here</p>
+                      <p className="text-sm text-gray-700 font-medium mb-1">Télécharger une image</p>
+                      <p className="text-xs text-gray-500">Cliquez pour parcourir ou déposez une image ici</p>
                     </>
                   )}
                   
@@ -344,7 +364,7 @@ const EditRecipe = () => {
                 <div className="mt-3 grid grid-cols-1 gap-3">
                   <div className="flex items-center">
                     <div className="h-px bg-gray-300 flex-grow"></div>
-                    <span className="px-2 text-sm text-gray-500">OR</span>
+                    <span className="px-2 text-sm text-gray-500">OU</span>
                     <div className="h-px bg-gray-300 flex-grow"></div>
                   </div>
                   
@@ -354,7 +374,7 @@ const EditRecipe = () => {
                     type="url"
                     value={recipe.image}
                     onChange={handleChange}
-                    placeholder="Enter image URL"
+                    placeholder="Entrer l'URL de l'image"
                     disabled={isSubmitting}
                     className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm shadow-sm"
                   />
@@ -373,12 +393,12 @@ const EditRecipe = () => {
             
             {/* Recipe Details */}
             <div className="bg-orange-50 p-6 rounded-lg shadow-inner">
-              <h2 className="text-xl font-serif font-semibold text-gray-900 mb-4">Recipe Details</h2>
+              <h2 className="text-xl font-serif font-semibold text-gray-900 mb-4">Détails de la recette</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div>
                   <label htmlFor="prepTime" className="block text-sm font-medium text-gray-700 mb-1">
-                    Preparation Time
+                    Temps de préparation
                   </label>
                   <input
                     id="prepTime"
@@ -386,7 +406,7 @@ const EditRecipe = () => {
                     type="text"
                     value={recipe.prepTime}
                     onChange={handleChange}
-                    placeholder="e.g. 15 minutes"
+                    placeholder="ex. 15 minutes"
                     disabled={isSubmitting}
                     className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm"
                   />
@@ -394,7 +414,7 @@ const EditRecipe = () => {
                 
                 <div>
                   <label htmlFor="cookTime" className="block text-sm font-medium text-gray-700 mb-1">
-                    Cooking Time
+                    Temps de cuisson
                   </label>
                   <input
                     id="cookTime"
@@ -402,7 +422,7 @@ const EditRecipe = () => {
                     type="text"
                     value={recipe.cookTime}
                     onChange={handleChange}
-                    placeholder="e.g. 30 minutes"
+                    placeholder="ex. 30 minutes"
                     disabled={isSubmitting}
                     className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm"
                   />
@@ -410,7 +430,7 @@ const EditRecipe = () => {
                 
                 <div>
                   <label htmlFor="servings" className="block text-sm font-medium text-gray-700 mb-1">
-                    Servings
+                    Portions
                   </label>
                   <input
                     id="servings"
@@ -418,7 +438,7 @@ const EditRecipe = () => {
                     type="text"
                     value={recipe.servings}
                     onChange={handleChange}
-                    placeholder="e.g. 4 servings"
+                    placeholder="ex. 4 portions"
                     disabled={isSubmitting}
                     className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm"
                   />
@@ -428,7 +448,7 @@ const EditRecipe = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="ingredients" className="block text-sm font-medium text-gray-700 mb-1">
-                    Ingredients <span className="text-red-500">*</span> (one per line)
+                    Ingrédients <span className="text-red-500">*</span> (un par ligne)
                   </label>
                   <textarea
                     id="ingredients"
@@ -436,9 +456,9 @@ const EditRecipe = () => {
                     value={recipe.ingredients}
                     onChange={handleChange}
                     required
-                    placeholder="1 cup flour
-2 eggs
-1/2 cup sugar
+                    placeholder="1 tasse de farine
+2 œufs
+1/2 tasse de sucre
 ..."
                     disabled={isSubmitting}
                     rows="10"
@@ -456,7 +476,7 @@ const EditRecipe = () => {
                     value={recipe.instructions}
                     onChange={handleChange}
                     required
-                    placeholder="Step-by-step instructions for preparing the recipe..."
+                    placeholder="Instructions étape par étape pour préparer la recette..."
                     disabled={isSubmitting}
                     rows="10"
                     className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm"
@@ -468,14 +488,14 @@ const EditRecipe = () => {
             {/* Additional Notes */}
             <div>
               <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-                Additional Notes
+                Notes additionnelles
               </label>
               <textarea
                 id="notes"
                 name="notes"
                 value={recipe.notes}
                 onChange={handleChange}
-                placeholder="Any additional tips, variations, or notes about the recipe..."
+                placeholder="Conseils supplémentaires, variations, ou notes sur la recette..."
                 disabled={isSubmitting}
                 rows="4"
                 className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm"
@@ -490,7 +510,7 @@ const EditRecipe = () => {
                 disabled={isSubmitting}
                 className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors"
               >
-                Cancel
+                Annuler
               </button>
               <button
                 type="submit"
@@ -503,9 +523,9 @@ const EditRecipe = () => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Saving Changes...
+                    Enregistrement...
                   </div>
-                ) : 'Save Changes'}
+                ) : 'Enregistrer les modifications'}
               </button>
             </div>
           </form>

@@ -1,4 +1,4 @@
-// src/components/RecipeCard.jsx
+// Fixed RecipeCard.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -13,14 +13,14 @@ const RecipeCard = ({ recipe }) => {
   const category = recipe.strCategory || recipe.category;
   const image = recipe.strMealThumb || recipe.image;
   const description = recipe.strInstructions 
-    ? recipe.strInstructions.split('.')[0] + '.' 
-    : recipe.description || '';
+    ? recipe.strInstructions.substring(0, 120) + '...' 
+    : (recipe.description ? recipe.description.substring(0, 120) + '...' : '');
   
   // Check if recipe is in favorites
   const favorite = isFavorite && isFavorite(id);
   
   // Default image
-  const defaultImage = "https://placehold.co/400x300/f8f9fa/6c757d?text=No+Image";
+  const defaultImage = "https://placehold.co/400x300/f97316/ffffff?text=No+Image";
   
   // Handle favorite toggle
   const handleFavoriteToggle = (e) => {
@@ -42,19 +42,19 @@ const RecipeCard = ({ recipe }) => {
   }, [recipe]);
   
   return (
-    <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden h-full">
       <div className="relative h-60">
         {/* Recipe image with fallback */}
         <img 
           src={!imageError && image ? image : defaultImage}
           alt={title} 
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
           onError={() => setImageError(true)}
         />
         
         {/* Category label */}
         {category && (
-          <span className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold text-white bg-orange-500">
+          <span className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold text-white bg-orange-500 shadow-md">
             {category}
           </span>
         )}
@@ -62,7 +62,7 @@ const RecipeCard = ({ recipe }) => {
         {/* Favorite button */}
         <button 
           onClick={handleFavoriteToggle}
-          className="absolute top-4 left-4 p-2 rounded-full bg-white bg-opacity-90 shadow-sm hover:shadow-md transition-shadow"
+          className="absolute top-4 left-4 p-2 rounded-full bg-white bg-opacity-90 shadow-md hover:shadow-lg transition-shadow"
           aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
         >
           <svg 
@@ -81,10 +81,12 @@ const RecipeCard = ({ recipe }) => {
       </div>
       
       <div className="p-5">
-        <h3 className="text-xl font-semibold mb-2">{title}</h3>
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-          {description}
-        </p>
+        <h3 className="text-xl font-semibold mb-2 text-gray-800">{title}</h3>
+        {description && (
+          <p className="text-gray-600 text-sm mb-4 line-clamp-2 min-h-[40px]">
+            {description}
+          </p>
+        )}
         
         <div className="mt-4 flex justify-end">
           <Link 

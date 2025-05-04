@@ -10,16 +10,17 @@ import AddRecipe from './pages/recipes/AddRecipe';
 import EditRecipe from './pages/recipes/EditRecipe';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import Favorites from './pages/Favorites';
 import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider } from './hooks/useAuth'; // Make sure this comes from hooks/useAuth
 import ProtectedRoute from './components/ProtectedRoute';
 import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
+    <AuthProvider>
+      <Router>
         <div className="flex flex-col min-h-screen">
           <Navbar />
           <ScrollToTop />
@@ -56,6 +57,14 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
+              <Route 
+                path="/favorites" 
+                element={
+                  <ProtectedRoute>
+                    <Favorites />
+                  </ProtectedRoute>
+                } 
+              />
               
               {/* Auth routes */}
               <Route path="/login" element={<Login />} />
@@ -67,8 +76,8 @@ function App() {
           </main>
           <Footer />
         </div>
-      </AuthProvider>
-    </Router>
+      </Router>
+    </AuthProvider>
   );
 }
 

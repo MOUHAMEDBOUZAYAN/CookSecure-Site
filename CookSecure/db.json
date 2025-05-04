@@ -13,6 +13,20 @@
       "password": "user123",
       "name": "Regular User",
       "role": "user"
+    },
+    {
+      "id": "1746372243450",
+      "email": "mouhamed@gmail.com",
+      "password": "123123",
+      "name": "M.r Mohamed Bouzayan",
+      "role": "user"
+    },
+    {
+      "id": "1746373654623",
+      "email": "lhsen@gmail.com",
+      "password": "123123",
+      "name": "lhsen",
+      "role": "chef"
     }
   ],
   "recipes": [

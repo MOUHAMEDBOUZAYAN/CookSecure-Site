@@ -7,7 +7,7 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, canManageRecipes, favorites } = useAuth();
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -83,19 +83,45 @@ const Navbar = () => {
                 </svg>
                 Recipes
               </Link>
-              <Link to="/add-recipe" className="px-3 py-2 flex items-center text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-gray-50 rounded-md">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add Recipe
-              </Link>
+              
+              {/* Favorites link - only show when user is logged in */}
+              {user && (
+                <Link to="/favorites" className="px-3 py-2 flex items-center text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-gray-50 rounded-md">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                  Favorites
+                  {favorites.length > 0 && (
+                    <span className="ml-1 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5">
+                      {favorites.length}
+                    </span>
+                  )}
+                </Link>
+              )}
+              
+              {/* Show Add Recipe link only to chefs and admins */}
+              {canManageRecipes() && (
+                <Link to="/add-recipe" className="px-3 py-2 flex items-center text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-gray-50 rounded-md">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Recipe
+                </Link>
+              )}
+              
               {user ? (
                 <>
                   <Link to="/profile" className="px-3 py-2 flex items-center text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-gray-50 rounded-md">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    Profile
+                    {user.name}
+                    {user.role === 'chef' && (
+                      <span className="ml-1 text-xs text-orange-500 font-normal">(Chef)</span>
+                    )}
+                    {user.role === 'admin' && (
+                      <span className="ml-1 text-xs text-purple-600 font-normal">(Admin)</span>
+                    )}
                   </Link>
                   <button 
                     onClick={handleLogout}
@@ -200,16 +226,39 @@ const Navbar = () => {
             </svg>
             Recipes
           </Link>
-          <Link 
-            to="/add-recipe" 
-            className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-orange-600 hover:bg-gray-50 flex items-center"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Recipe
-          </Link>
+          
+          {/* Favorites link in mobile menu - only show when user is logged in */}
+          {user && (
+            <Link 
+              to="/favorites" 
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-orange-600 hover:bg-gray-50 flex items-center"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              Favorites
+              {favorites.length > 0 && (
+                <span className="ml-1 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5">
+                  {favorites.length}
+                </span>
+              )}
+            </Link>
+          )}
+          
+          {/* Show Add Recipe link only to chefs and admins */}
+          {canManageRecipes() && (
+            <Link 
+              to="/add-recipe" 
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-orange-600 hover:bg-gray-50 flex items-center"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Recipe
+            </Link>
+          )}
           
           {user ? (
             <>
@@ -222,6 +271,12 @@ const Navbar = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
                 Profile
+                {user.role === 'chef' && (
+                  <span className="ml-1 text-xs text-orange-500 font-normal">(Chef)</span>
+                )}
+                {user.role === 'admin' && (
+                  <span className="ml-1 text-xs text-purple-600 font-normal">(Admin)</span>
+                )}
               </Link>
               <button
                 onClick={handleLogout}

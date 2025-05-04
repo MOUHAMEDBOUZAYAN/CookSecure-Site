@@ -28,7 +28,7 @@ export const getRandomRecipes = async (count = 8) => {
   }
 };
 
-
+// Get ALL recipes (both from API and local database)
 export const getRecipes = async (params = {}) => {
   try {
     const { category, query, limit } = params;
@@ -43,8 +43,16 @@ export const getRecipes = async (params = {}) => {
       return searchRecipes(query);
     }
     
-    // Default: get random recipes
-    return getRandomRecipes(limit || 10);
+    // Get both remote and local recipes and combine them
+    // Get random recipes from API
+    const apiRecipes = await getRandomRecipes(limit || 8);
+    
+    // Get local recipes from json-server
+    const localRecipesResponse = await axios.get(`${LOCAL_API_URL}/recipes`);
+    const localRecipes = localRecipesResponse.data || [];
+    
+    // Combine both sets of recipes
+    return [...localRecipes, ...apiRecipes];
   } catch (error) {
     console.error('Error fetching recipes:', error);
     return [];
@@ -65,8 +73,16 @@ export const getCategories = async () => {
 // Get recipes by category
 export const getRecipesByCategory = async (category) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/filter.php?c=${category}`);
-    return response.data.meals || [];
+    // Get API recipes for this category
+    const apiResponse = await axios.get(`${API_BASE_URL}/filter.php?c=${category}`);
+    const apiRecipes = apiResponse.data.meals || [];
+    
+    // Get local recipes for this category
+    const localResponse = await axios.get(`${LOCAL_API_URL}/recipes?category=${category}`);
+    const localRecipes = localResponse.data || [];
+    
+    // Combine both sets of recipes
+    return [...localRecipes, ...apiRecipes];
   } catch (error) {
     console.error(`Error fetching recipes for category ${category}:`, error);
     return [];
@@ -76,8 +92,23 @@ export const getRecipesByCategory = async (category) => {
 // Get recipe details by ID
 export const getRecipeById = async (id) => {
   try {
+    // First, check if it's a local recipe
+    try {
+      const localResponse = await axios.get(`${LOCAL_API_URL}/recipes/${id}`);
+      if (localResponse.data) {
+        return localResponse.data;
+      }
+    } catch (err) {
+      // If not found in local DB, continue to check the API
+    }
+    
+    // Then check the external API
     const response = await axios.get(`${API_BASE_URL}/lookup.php?i=${id}`);
-    return response.data.meals ? response.data.meals[0] : null;
+    if (response.data.meals && response.data.meals.length > 0) {
+      return response.data.meals[0];
+    }
+    
+    throw new Error('Recipe not found');
   } catch (error) {
     console.error(`Error fetching recipe details for ID ${id}:`, error);
     return null;
@@ -87,8 +118,26 @@ export const getRecipeById = async (id) => {
 // Search recipes by name
 export const searchRecipes = async (query) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/search.php?s=${query}`);
-    return response.data.meals || [];
+    // Search in API
+    const apiResponse = await axios.get(`${API_BASE_URL}/search.php?s=${query}`);
+    const apiRecipes = apiResponse.data.meals || [];
+    
+    // Search in local recipes
+    // Note: json-server doesn't support text search directly, 
+    // but we can get all recipes and filter them
+    const localResponse = await axios.get(`${LOCAL_API_URL}/recipes`);
+    const localRecipes = localResponse.data || [];
+    
+    // Filter local recipes by title or description containing the query
+    const matchingLocalRecipes = localRecipes.filter(recipe => {
+      const title = recipe.title || '';
+      const description = recipe.description || '';
+      const q = query.toLowerCase();
+      return title.toLowerCase().includes(q) || description.toLowerCase().includes(q);
+    });
+    
+    // Combine results
+    return [...matchingLocalRecipes, ...apiRecipes];
   } catch (error) {
     console.error(`Error searching recipes with query ${query}:`, error);
     return [];
@@ -96,9 +145,15 @@ export const searchRecipes = async (query) => {
 };
 
 // Get user-created recipes from db.json
-export const getUserRecipes = async () => {
+export const getUserRecipes = async (userId = null) => {
   try {
-    const response = await axios.get(`${LOCAL_API_URL}/recipes`);
+    let url = `${LOCAL_API_URL}/recipes`;
+    // If userId is provided, filter recipes by user
+    if (userId) {
+      url += `?userId=${userId}`;
+    }
+    
+    const response = await axios.get(url);
     return response.data || [];
   } catch (error) {
     console.error('Error fetching user recipes:', error);

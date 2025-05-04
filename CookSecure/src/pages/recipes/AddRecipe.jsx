@@ -14,8 +14,8 @@ const AddRecipe = () => {
     instructions: '',
     prepTime: '',
     cookTime: '',
-    category: 'Miscellaneous', // Valeur par défaut
-    image: '' // Optionnel
+    category: 'Miscellaneous', // Default value
+    image: '' // Optional
   });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,7 +30,7 @@ const AddRecipe = () => {
       [name]: value
     }));
     
-    // Prévisualisation de l'image si URL valide
+    // Preview image if URL is valid
     if (name === 'image' && value.trim() !== '') {
       setPreviewImage(true);
     }
@@ -41,10 +41,10 @@ const AddRecipe = () => {
     setIsSubmitting(true);
     setError('');
     
-    // Validation de base
+    // Basic validation
     if (!formData.title.trim() || !formData.description.trim()) {
-      setError('Le titre et la description sont obligatoires');
-      toast.error('Le titre et la description sont obligatoires');
+      setError('Title and description are required');
+      toast.error('Title and description are required');
       setIsSubmitting(false);
       return;
     }
@@ -55,41 +55,42 @@ const AddRecipe = () => {
         .filter(i => i.trim() !== '');
       
       if (ingredientsArray.length === 0) {
-        setError('Au moins un ingrédient est requis');
-        toast.error('Au moins un ingrédient est requis');
+        setError('At least one ingredient is required');
+        toast.error('At least one ingredient is required');
         setIsSubmitting(false);
         return;
       }
       
-      // Préparer les données de la recette
+      // Prepare recipe data
       const recipeData = {
         ...formData,
         ingredients: ingredientsArray,
-        userId: user?.id || 'anonymous'
+        userId: user?.id || 'anonymous',
+        author: user?.name || 'Anonymous'
       };
       
-      console.log('Envoi de la recette:', recipeData);
+      console.log('Sending recipe:', recipeData);
       
-      // Notification de chargement
-      const loadingToast = toast.loading('Ajout de la recette en cours...');
+      // Show loading notification
+      const loadingToast = toast.loading('Adding recipe...');
       
-      // Appeler le service d'ajout de recette
-      const result = await addRecipe(recipeData, user?.id);
+      // Call recipe service
+      const result = await addRecipe(recipeData);
       
-      console.log('Recette ajoutée avec succès:', result);
+      console.log('Recipe added successfully:', result);
       
-      // Remplacer la notification de chargement par une notification de succès
+      // Replace loading notification with success notification
       toast.dismiss(loadingToast);
-      toast.success(`Recette "${formData.title}" ajoutée avec succès!`);
+      toast.success(`Recipe "${formData.title}" added successfully!`);
       
-      // Rediriger après un court délai pour que l'utilisateur puisse voir la notification
+      // Redirect after a short delay to show notification
       setTimeout(() => {
-        navigate('/');
+        navigate('/recipes?user=mine');
       }, 1500);
     } catch (err) {
-      console.error('Échec de l\'ajout de recette:', err);
-      setError(`Échec de l'ajout de recette: ${err.message || 'Erreur inconnue'}`);
-      toast.error(`Échec de l'ajout: ${err.message || 'Erreur de connexion au serveur'}`);
+      console.error('Failed to add recipe:', err);
+      setError(`Failed to add recipe: ${err.message || 'Unknown error'}`);
+      toast.error(`Failed to add: ${err.message || 'Server connection error'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -129,7 +130,7 @@ const AddRecipe = () => {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-xl shadow-md overflow-hidden">
             <div className="px-6 py-8 sm:p-10">
-              <h1 className="text-2xl font-serif font-bold text-gray-900 mb-6">Ajouter une nouvelle recette</h1>
+              <h1 className="text-2xl font-serif font-bold text-gray-900 mb-6">Add a New Recipe</h1>
               
               {error && (
                 <div className="mb-6 bg-red-50 border border-red-200 text-red-600 rounded-lg p-4">
@@ -140,7 +141,7 @@ const AddRecipe = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                    Titre de la recette *
+                    Recipe Title *
                   </label>
                   <input
                     id="title"
@@ -151,13 +152,13 @@ const AddRecipe = () => {
                     required
                     disabled={isSubmitting}
                     className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="Entrer le titre de la recette"
+                    placeholder="Enter recipe title"
                   />
                 </div>
                 
                 <div>
                   <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-                    Catégorie *
+                    Category *
                   </label>
                   <select
                     id="category"
@@ -168,20 +169,20 @@ const AddRecipe = () => {
                     disabled={isSubmitting}
                     className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   >
-                    <option value="Miscellaneous">Divers</option>
-                    <option value="Beef">Bœuf</option>
-                    <option value="Chicken">Poulet</option>
+                    <option value="Miscellaneous">Miscellaneous</option>
+                    <option value="Beef">Beef</option>
+                    <option value="Chicken">Chicken</option>
                     <option value="Dessert">Dessert</option>
-                    <option value="Lamb">Agneau</option>
-                    <option value="Pasta">Pâtes</option>
-                    <option value="Pork">Porc</option>
-                    <option value="Seafood">Fruits de mer</option>
-                    <option value="Side">Accompagnement</option>
-                    <option value="Starter">Entrée</option>
+                    <option value="Lamb">Lamb</option>
+                    <option value="Pasta">Pasta</option>
+                    <option value="Pork">Pork</option>
+                    <option value="Seafood">Seafood</option>
+                    <option value="Side">Side Dish</option>
+                    <option value="Starter">Starter</option>
                     <option value="Vegan">Vegan</option>
-                    <option value="Vegetarian">Végétarien</option>
-                    <option value="Breakfast">Petit-déjeuner</option>
-                    <option value="Goat">Chèvre</option>
+                    <option value="Vegetarian">Vegetarian</option>
+                    <option value="Breakfast">Breakfast</option>
+                    <option value="Goat">Goat</option>
                   </select>
                 </div>
                 
@@ -197,14 +198,14 @@ const AddRecipe = () => {
                     required
                     disabled={isSubmitting}
                     className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="Décrivez brièvement votre recette"
+                    placeholder="Briefly describe your recipe"
                     rows="3"
                   />
                 </div>
                 
                 <div>
                   <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
-                    URL de l'image (optionnel)
+                    Image URL (optional)
                   </label>
                   <input
                     id="image"
@@ -214,13 +215,13 @@ const AddRecipe = () => {
                     onChange={handleChange}
                     disabled={isSubmitting}
                     className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="https://exemple.com/votre-image.jpg"
+                    placeholder="https://example.com/your-image.jpg"
                   />
                   {previewImage && formData.image && (
                     <div className="mt-2">
                       <img 
                         src={formData.image} 
-                        alt="Prévisualisation de la recette" 
+                        alt="Recipe preview" 
                         className="h-40 w-auto object-cover rounded" 
                         onError={(e) => {
                           e.target.onerror = null;
@@ -234,7 +235,7 @@ const AddRecipe = () => {
                 
                 <div>
                   <label htmlFor="ingredients" className="block text-sm font-medium text-gray-700 mb-1">
-                    Ingrédients * (un par ligne)
+                    Ingredients * (one per line)
                   </label>
                   <textarea
                     id="ingredients"
@@ -244,7 +245,7 @@ const AddRecipe = () => {
                     required
                     disabled={isSubmitting}
                     className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 h-32"
-                    placeholder="ex:&#10;2 tasses de farine&#10;1 c. à thé de sel&#10;3 gros œufs"
+                    placeholder="e.g.:&#10;2 cups flour&#10;1 tsp salt&#10;3 large eggs"
                   />
                 </div>
                 
@@ -260,14 +261,14 @@ const AddRecipe = () => {
                     required
                     disabled={isSubmitting}
                     className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 h-48"
-                    placeholder="Étapes de préparation détaillées de la recette..."
+                    placeholder="Detailed preparation steps..."
                   />
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="prepTime" className="block text-sm font-medium text-gray-700 mb-1">
-                      Temps de préparation
+                      Preparation Time
                     </label>
                     <input
                       id="prepTime"
@@ -277,13 +278,13 @@ const AddRecipe = () => {
                       onChange={handleChange}
                       disabled={isSubmitting}
                       className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                      placeholder="ex. 15 minutes"
+                      placeholder="e.g. 15 minutes"
                     />
                   </div>
                   
                   <div>
                     <label htmlFor="cookTime" className="block text-sm font-medium text-gray-700 mb-1">
-                      Temps de cuisson
+                      Cooking Time
                     </label>
                     <input
                       id="cookTime"
@@ -293,7 +294,7 @@ const AddRecipe = () => {
                       onChange={handleChange}
                       disabled={isSubmitting}
                       className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                      placeholder="ex. 30 minutes"
+                      placeholder="e.g. 30 minutes"
                     />
                   </div>
                 </div>
@@ -301,11 +302,11 @@ const AddRecipe = () => {
                 <div className="flex items-center justify-end space-x-4 pt-4">
                   <button
                     type="button"
-                    onClick={() => navigate('/')}
+                    onClick={() => navigate('/recipes')}
                     disabled={isSubmitting}
                     className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
                   >
-                    Annuler
+                    Cancel
                   </button>
                   <button
                     type="submit"
@@ -318,9 +319,9 @@ const AddRecipe = () => {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Enregistrement...
+                        Saving...
                       </span>
-                    ) : 'Enregistrer la recette'}
+                    ) : 'Save Recipe'}
                   </button>
                 </div>
               </form>

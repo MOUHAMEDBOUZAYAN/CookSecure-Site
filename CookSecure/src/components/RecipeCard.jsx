@@ -1,15 +1,15 @@
 // src/components/RecipeCard.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { deleteRecipe } from '../services/recipes';
 
-const RecipeCard = ({ recipe, onDelete }) => {
-  const { user, canEditRecipe, addToFavorites, removeFromFavorites, isFavorite } = useAuth();
+const RecipeCard = ({ recipe }) => {
+  const { user, addToFavorites, removeFromFavorites, isFavorite } = useAuth();
+  const [imageError, setImageError] = useState(false);
   
   // Handle both TheMealDB API and custom recipes
   const id = recipe.idMeal || recipe.id;
-  const title = recipe.strMeal || recipe.title;
+  const title = recipe.strMeal || recipe.title || 'Untitled Recipe';
   const category = recipe.strCategory || recipe.category;
   const image = recipe.strMealThumb || recipe.image;
   const description = recipe.strInstructions 
@@ -17,12 +17,17 @@ const RecipeCard = ({ recipe, onDelete }) => {
     : recipe.description || '';
   
   // Check if recipe is in favorites
-  const favorite = isFavorite(id);
+  const favorite = isFavorite && isFavorite(id);
   
-  // Toggle favorite status
+  // Default image
+  const defaultImage = "https://placehold.co/400x300/f8f9fa/6c757d?text=No+Image";
+  
+  // Handle favorite toggle
   const handleFavoriteToggle = (e) => {
-    e.preventDefault(); // Prevent navigation to recipe detail
+    e.preventDefault();
     e.stopPropagation();
+    
+    if (!user) return;
     
     if (favorite) {
       removeFromFavorites(id);
@@ -30,110 +35,68 @@ const RecipeCard = ({ recipe, onDelete }) => {
       addToFavorites(recipe);
     }
   };
-
-  // Handle delete recipe
-  const handleDelete = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (window.confirm('Are you sure you want to delete this recipe?')) {
-      try {
-        await deleteRecipe(id);
-        
-        // If there's an onDelete callback, call it to update the UI
-        if (onDelete) {
-          onDelete(id);
-        } else {
-          // Refresh the page if no callback provided
-          window.location.reload();
-        }
-      } catch (error) {
-        console.error('Error deleting recipe:', error);
-        alert('Failed to delete recipe. Please try again.');
-      }
-    }
-  };
+  
+  // Reset image error state when recipe changes
+  useEffect(() => {
+    setImageError(false);
+  }, [recipe]);
   
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-      <div className="relative h-48">
+    <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+      <div className="relative h-60">
+        {/* Recipe image with fallback */}
         <img 
-          src={image} 
+          src={!imageError && image ? image : defaultImage}
           alt={title} 
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = 'https://placehold.co/400x300/orange/white?text=Recipe';
-          }} 
+          className="h-full w-full object-cover"
+          onError={() => setImageError(true)}
         />
+        
+        {/* Category label */}
         {category && (
-          <span className="absolute top-2 right-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+          <span className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold text-white bg-orange-500">
             {category}
           </span>
         )}
         
-        {/* Favorite button - only show when user is logged in */}
-        {user && (
-          <button 
-            onClick={handleFavoriteToggle}
-            className={`absolute top-2 left-2 p-2 rounded-full ${favorite ? 'bg-red-500' : 'bg-gray-100'}`}
-            aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
+        {/* Favorite button */}
+        <button 
+          onClick={handleFavoriteToggle}
+          className="absolute top-4 left-4 p-2 rounded-full bg-white bg-opacity-90 shadow-sm hover:shadow-md transition-shadow"
+          aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
+        >
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            viewBox="0 0 24 24" 
+            className={`h-5 w-5 ${favorite ? 'fill-current text-red-500' : 'fill-none stroke-current text-gray-700'}`}
+            strokeWidth="2"
           >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className={`h-5 w-5 ${favorite ? 'text-white' : 'text-gray-600'}`} 
-              viewBox="0 0 20 20" 
-              fill="currentColor"
-            >
-              <path 
-                fillRule="evenodd" 
-                d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" 
-                clipRule="evenodd" 
-              />
-            </svg>
-          </button>
-        )}
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+            />
+          </svg>
+        </button>
       </div>
       
-      <div className="p-4">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
+      <div className="p-5">
+        <h3 className="text-xl font-semibold mb-2">{title}</h3>
+        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+          {description}
+        </p>
         
-        {description && (
-          <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-            {description}
-          </p>
-        )}
-        
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-500">
-            {recipe.userId && user && user.id === recipe.userId ? 'Your recipe' : ''}
-          </span>
-          
+        <div className="mt-4 flex justify-end">
           <Link 
             to={`/recipe/${id}`} 
-            className="text-orange-500 hover:text-orange-600 text-sm font-medium"
+            className="text-orange-500 hover:text-orange-600 text-sm font-medium inline-flex items-center"
           >
-            View Recipe →
+            View Recipe
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </Link>
         </div>
-        
-        {/* Edit/Delete buttons - only show to authorized users */}
-        {canEditRecipe(recipe) && (
-          <div className="mt-3 pt-3 border-t border-gray-100 flex justify-end space-x-2">
-            <Link 
-              to={`/edit-recipe/${id}`}
-              className="text-sm text-yellow-600 hover:text-yellow-800"
-            >
-              Edit
-            </Link>
-            <button 
-              className="text-sm text-red-600 hover:text-red-800"
-              onClick={handleDelete}
-            >
-              Delete
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

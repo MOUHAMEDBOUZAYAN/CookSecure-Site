@@ -89,6 +89,7 @@ const Favorites = () => {
                 <RecipeCard 
                   key={recipe.idMeal || recipe.id} 
                   recipe={recipe} 
+                  onDelete={handleRemove}
                 />
               ))}
             </div>

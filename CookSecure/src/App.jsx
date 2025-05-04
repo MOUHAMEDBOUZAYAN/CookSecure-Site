@@ -5,6 +5,7 @@ import { AuthProvider } from './hooks/useAuth';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedChefRoute from './components/ProtectedChefRoute';
 import ScrollToTop from './components/ScrollToTop';
 
 // Pages
@@ -37,23 +38,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               
-              {/* Protected routes */}
-              <Route 
-                path="/add-recipe" 
-                element={
-                  <ProtectedRoute>
-                    <AddRecipe />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/edit-recipe/:id" 
-                element={
-                  <ProtectedRoute>
-                    <EditRecipe />
-                  </ProtectedRoute>
-                } 
-              />
+              {/* Protected routes (requires authentication) */}
               <Route 
                 path="/favorites" 
                 element={
@@ -68,6 +53,24 @@ function App() {
                   <ProtectedRoute>
                     <Profile />
                   </ProtectedRoute>
+                } 
+              />
+              
+              {/* Chef/Admin protected routes */}
+              <Route 
+                path="/add-recipe" 
+                element={
+                  <ProtectedChefRoute>
+                    <AddRecipe />
+                  </ProtectedChefRoute>
+                } 
+              />
+              <Route 
+                path="/edit-recipe/:id" 
+                element={
+                  <ProtectedChefRoute>
+                    <EditRecipe />
+                  </ProtectedChefRoute>
                 } 
               />
               

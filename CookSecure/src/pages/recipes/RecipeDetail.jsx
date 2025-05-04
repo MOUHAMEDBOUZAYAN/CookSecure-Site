@@ -1,15 +1,20 @@
 // src/pages/recipes/RecipeDetail.jsx
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { getRecipeById, getRandomRecipes, formatRecipeData } from '../../services/recipes';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { getRecipeById, getRandomRecipes, formatRecipeData, deleteRecipe } from '../../services/recipes';
+import { useAuth } from '../../hooks/useAuth';
 
 const RecipeDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user, canEditRecipe } = useAuth();
   const [recipe, setRecipe] = useState(null);
   const [formattedRecipe, setFormattedRecipe] = useState(null);
   const [relatedRecipes, setRelatedRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ingredients');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchRecipeDetails = async () => {
@@ -40,6 +45,54 @@ const RecipeDetail = () => {
     fetchRecipeDetails();
   }, [id]);
 
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteRecipe(id);
+      setShowDeleteModal(false);
+      navigate('/recipes', { state: { message: 'Recipe deleted successfully' } });
+    } catch (error) {
+      console.error('Error deleting recipe:', error);
+      alert('Failed to delete recipe. Please try again.');
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
+  // Check if user can edit this recipe
+  const userCanEdit = recipe && user && canEditRecipe && canEditRecipe(recipe);
+  
+  // Extract recipe info fields - handle both API and local format
+  const getRecipeInfo = () => {
+    // For API recipes (TheMealDB format)
+    if (recipe?.strMeal) {
+      return {
+        prepTime: null, // Not provided by TheMealDB
+        cookTime: null, // Not provided by TheMealDB
+        servings: null, // Not provided by TheMealDB
+        difficulty: null, // Not provided by TheMealDB
+        date: recipe.dateModified || null
+      };
+    }
+    
+    // For local recipes
+    return {
+      prepTime: recipe?.prepTime || null,
+      cookTime: recipe?.cookTime || null,
+      servings: recipe?.servings || null,
+      difficulty: recipe?.difficulty || null,
+      date: recipe?.date || null
+    };
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -60,33 +113,65 @@ const RecipeDetail = () => {
       </div>
     );
   }
+  
+  // Get recipe info for display
+  const recipeInfo = getRecipeInfo();
+  
+  // Check if there's any info to display
+  const hasRecipeInfo = recipeInfo.prepTime || recipeInfo.cookTime || 
+                       recipeInfo.servings || recipeInfo.difficulty || 
+                       recipeInfo.date;
 
   return (
     <div className="bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-4">{recipe.strMeal}</h1>
-          <div className="flex flex-wrap gap-2">
-            {recipe.strCategory && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
-                {recipe.strCategory}
-              </span>
-            )}
-            {recipe.strArea && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                {recipe.strArea}
-              </span>
-            )}
+        <div className="mb-8 flex flex-wrap justify-between items-center">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-4">{recipe.strMeal || recipe.title}</h1>
+            <div className="flex flex-wrap gap-2">
+              {(recipe.strCategory || recipe.category) && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
+                  {recipe.strCategory || recipe.category}
+                </span>
+              )}
+              {recipe.strArea && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                  {recipe.strArea}
+                </span>
+              )}
+            </div>
           </div>
+          
+          {/* Admin/Author Actions */}
+          {userCanEdit && (
+            <div className="flex space-x-3 mt-4 md:mt-0">
+              <Link 
+                to={`/edit-recipe/${id}`} 
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+              >
+                Edit Recipe
+              </Link>
+              <button 
+                onClick={handleDeleteClick}
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+              >
+                Delete Recipe
+              </button>
+            </div>
+          )}
         </div>
         
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="lg:w-2/3">
             <div className="bg-white rounded-xl overflow-hidden shadow-md mb-8">
               <img 
-                src={recipe.strMealThumb} 
-                alt={recipe.strMeal} 
+                src={recipe.strMealThumb || recipe.image} 
+                alt={recipe.strMeal || recipe.title} 
                 className="w-full h-72 md:h-96 object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "https://placehold.co/800x600/f8f9fa/6c757d?text=No+Image";
+                }}
               />
             </div>
             
@@ -119,12 +204,29 @@ const RecipeDetail = () => {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Ingredients</h3>
                     <ul className="space-y-2">
-                      {formattedRecipe.ingredients.map((item, index) => (
-                        <li key={index} className="flex items-center py-2 border-b border-gray-100">
-                          <span className="font-medium text-gray-700 w-24">{item.measure}</span>
-                          <span className="text-gray-600">{item.name}</span>
-                        </li>
-                      ))}
+                      {formattedRecipe?.ingredients ? (
+                        formattedRecipe.ingredients.map((item, index) => (
+                          <li key={index} className="flex items-center py-2 border-b border-gray-100">
+                            <span className="font-medium text-gray-700 w-24">{item.measure}</span>
+                            <span className="text-gray-600">{item.name}</span>
+                          </li>
+                        ))
+                      ) : recipe.ingredients && Array.isArray(recipe.ingredients) ? (
+                        recipe.ingredients.map((item, index) => (
+                          <li key={index} className="flex items-center py-2 border-b border-gray-100">
+                            {typeof item === 'string' ? (
+                              <span className="text-gray-600">{item}</span>
+                            ) : (
+                              <>
+                                <span className="font-medium text-gray-700 w-24">{item.measure}</span>
+                                <span className="text-gray-600">{item.name}</span>
+                              </>
+                            )}
+                          </li>
+                        ))
+                      ) : (
+                        <li className="text-gray-600">No ingredients listed</li>
+                      )}
                     </ul>
                   </div>
                 )}
@@ -133,16 +235,35 @@ const RecipeDetail = () => {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Directions</h3>
                     <div className="space-y-6">
-                      {recipe.strInstructions.split('.').filter(instruction => instruction.trim() !== '').map((instruction, index) => (
-                        <div key={index} className="flex">
-                          <div className="flex-shrink-0 mr-4">
-                            <div className="flex items-center justify-center h-8 w-8 rounded-full bg-orange-100 text-orange-500 font-semibold">
-                              {index + 1}
+                      {recipe.strInstructions ? (
+                        recipe.strInstructions.split('.').filter(instruction => instruction.trim() !== '').map((instruction, index) => (
+                          <div key={index} className="flex">
+                            <div className="flex-shrink-0 mr-4">
+                              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-orange-100 text-orange-500 font-semibold">
+                                {index + 1}
+                              </div>
                             </div>
+                            <p className="text-gray-600">{instruction.trim()}.</p>
                           </div>
-                          <p className="text-gray-600">{instruction.trim()}.</p>
-                        </div>
-                      ))}
+                        ))
+                      ) : recipe.instructions ? (
+                        typeof recipe.instructions === 'string' ? (
+                          recipe.instructions.split('.').filter(instruction => instruction.trim() !== '').map((instruction, index) => (
+                            <div key={index} className="flex">
+                              <div className="flex-shrink-0 mr-4">
+                                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-orange-100 text-orange-500 font-semibold">
+                                  {index + 1}
+                                </div>
+                              </div>
+                              <p className="text-gray-600">{instruction.trim()}.</p>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-gray-600">{recipe.instructions}</p>
+                        )
+                      ) : (
+                        <p className="text-gray-600">No directions available</p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -156,7 +277,7 @@ const RecipeDetail = () => {
                           <a href={recipe.strSource} target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:text-orange-600">
                             the original source
                           </a>
-                        ) : 'TheMealDB'}
+                        ) : recipe.source ? recipe.source : 'our collection'}
                       </p>
                       
                       {recipe.strTags && (
@@ -189,6 +310,13 @@ const RecipeDetail = () => {
                           </a>
                         </div>
                       )}
+                      
+                      {recipe.notes && (
+                        <div>
+                          <h4 className="text-base font-medium text-gray-800 mb-2">Additional Notes:</h4>
+                          <p className="text-gray-600">{recipe.notes}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -197,37 +325,61 @@ const RecipeDetail = () => {
           </div>
           
           <div className="lg:w-1/3">
+            {/* Recipe Info Card - Now with conditional rendering */}
             <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Nutrition Information</h3>
-                <ul className="space-y-3">
-                  <li className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">Calories</span>
-                    <span className="font-semibold text-gray-800">350 kcal</span>
-                  </li>
-                  <li className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">Carbs</span>
-                    <span className="font-semibold text-gray-800">45g</span>
-                  </li>
-                  <li className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">Protein</span>
-                    <span className="font-semibold text-gray-800">20g</span>
-                  </li>
-                  <li className="flex justify-between items-center py-2">
-                    <span className="text-gray-600">Fat</span>
-                    <span className="font-semibold text-gray-800">10g</span>
-                  </li>
-                </ul>
-                <small className="block mt-4 text-gray-500 text-xs">* Approximate values</small>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recipe Info</h3>
+                {hasRecipeInfo ? (
+                  <ul className="space-y-3">
+                    {recipeInfo.prepTime && (
+                      <li className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Prep Time</span>
+                        <span className="font-semibold text-gray-800">{recipeInfo.prepTime}</span>
+                      </li>
+                    )}
+                    {recipeInfo.cookTime && (
+                      <li className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Cook Time</span>
+                        <span className="font-semibold text-gray-800">{recipeInfo.cookTime}</span>
+                      </li>
+                    )}
+                    {recipeInfo.servings && (
+                      <li className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Servings</span>
+                        <span className="font-semibold text-gray-800">{recipeInfo.servings}</span>
+                      </li>
+                    )}
+                    {recipeInfo.difficulty && (
+                      <li className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Difficulty</span>
+                        <span className="font-semibold text-gray-800">{recipeInfo.difficulty}</span>
+                      </li>
+                    )}
+                    {recipeInfo.date && (
+                      <li className="flex justify-between items-center py-2">
+                        <span className="text-gray-600">Added</span>
+                        <span className="font-semibold text-gray-800">
+                          {new Date(recipeInfo.date).toLocaleDateString()}
+                        </span>
+                      </li>
+                    )}
+                  </ul>
+                ) : (
+                  // Display placeholder when no info is available
+                  <div className="text-gray-500 italic">
+                    No additional information available for this recipe.
+                  </div>
+                )}
               </div>
             </div>
             
-            {recipe.strSource && (
+            {/* Source Card - Show only if source exists */}
+            {(recipe.strSource || recipe.source) && (
               <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
                 <div className="p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Source</h3>
                   <a 
-                    href={recipe.strSource} 
+                    href={recipe.strSource || recipe.source} 
                     target="_blank" 
                     rel="noopener noreferrer" 
                     className="text-orange-500 hover:text-orange-600"
@@ -237,57 +389,79 @@ const RecipeDetail = () => {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl shadow-md overflow-hidden mt-12 p-6">
-          <div className="flex flex-col sm:flex-row items-center">
-            <div className="sm:w-1/4 mb-4 sm:mb-0">
-              <div className="w-24 h-24 mx-auto rounded-full overflow-hidden">
-                <img 
-                  src="/assets/images/Chef1.jpg" 
-                  alt="Chef" 
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = 'https://via.placeholder.com/100x100?text=Chef';
-                  }}
-                />
+            
+            {/* Author Card - Show only for user contributions */}
+            {recipe.userId && (
+              <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Author</h3>
+                  <p className="text-gray-600">
+                    This recipe was contributed by a member of our community
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="sm:w-3/4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Recipe by Chef Jane</h3>
-              <p className="text-gray-600">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-              </p>
-            </div>
+            )}
           </div>
         </div>
         
         {/* Related Recipes */}
-        <section className="mt-12">
-          <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6">You may like these recipes too</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {relatedRecipes.map(relatedRecipe => (
-              <div key={relatedRecipe.idMeal} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                <Link to={`/recipe/${relatedRecipe.idMeal}`}>
-                  <div className="relative h-48">
-                    <img 
-                      src={relatedRecipe.strMealThumb} 
-                      alt={relatedRecipe.strMeal} 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <h3 className="text-lg font-medium text-gray-900 mb-1 truncate">{relatedRecipe.strMeal}</h3>
-                    <p className="text-sm text-gray-500">{relatedRecipe.strCategory}</p>
-                  </div>
-                </Link>
-              </div>
-            ))}
-          </div>
-        </section>
+        {relatedRecipes.length > 0 && (
+          <section className="mt-12">
+            <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6">You may like these recipes too</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {relatedRecipes.map(relatedRecipe => (
+                <div key={relatedRecipe.idMeal || relatedRecipe.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                  <Link to={`/recipe/${relatedRecipe.idMeal || relatedRecipe.id}`}>
+                    <div className="relative h-48">
+                      <img 
+                        src={relatedRecipe.strMealThumb || relatedRecipe.image} 
+                        alt={relatedRecipe.strMeal || relatedRecipe.title} 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "https://placehold.co/400x300/f8f9fa/6c757d?text=No+Image";
+                        }}
+                      />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-lg font-medium text-gray-900 mb-1 truncate">{relatedRecipe.strMeal || relatedRecipe.title}</h3>
+                      <p className="text-sm text-gray-500">{relatedRecipe.strCategory || relatedRecipe.category}</p>
+                    </div>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Delete Recipe</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this recipe? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleCancelDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Deliciousness delivered section */}
       <section className="py-16 bg-orange-50">

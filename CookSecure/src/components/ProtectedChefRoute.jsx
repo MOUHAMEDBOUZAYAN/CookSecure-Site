@@ -1,10 +1,10 @@
-// src/components/ProtectedRoute.jsx
+// src/components/ProtectedChefRoute.jsx
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
-const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+const ProtectedChefRoute = ({ children }) => {
+  const { user, loading, canManageRecipes } = useAuth();
   const location = useLocation();
 
   // Show loading state while auth state is being determined
@@ -22,8 +22,15 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" state={{ from: location.pathname }} />;
   }
 
-  // If authenticated, render the protected component
+  // If authenticated but not a chef or admin, redirect to home with message
+  if (!canManageRecipes()) {
+    return <Navigate to="/" state={{ 
+      error: "You don't have permission to access this page. Only chefs and admins can manage recipes." 
+    }} />;
+  }
+
+  // If authenticated and has correct role, render the protected component
   return children;
 };
 
-export default ProtectedRoute;
+export default ProtectedChefRoute;

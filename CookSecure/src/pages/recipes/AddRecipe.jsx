@@ -1,5 +1,5 @@
 // src/pages/recipes/AddRecipe.jsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { addRecipe } from '../../services/recipes';
@@ -24,9 +24,112 @@ const AddRecipe = () => {
   const [previewImage, setPreviewImage] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
+  
+  // Validation states
+  const [touched, setTouched] = useState({});
+  const [errors, setErrors] = useState({});
+  
+  // Toast notification state
+  const [toast, setToast] = useState({ show: false, message: '', type: 'INFO' });
+
+  // Validation rules
+  const validateField = (name, value) => {
+    switch (name) {
+      case 'title':
+        return !value.trim() ? 'Recipe title is required' : '';
+      case 'category':
+        return !value.trim() ? 'Please select a category' : '';
+      case 'description':
+        return !value.trim() ? 'Description is required' : 
+               value.length < 10 ? 'Description should be at least 10 characters' : '';
+      case 'ingredients':
+        return !value.trim() ? 'Ingredients are required' : 
+               value.split('\n').filter(i => i.trim()).length < 2 ? 'Please add at least 2 ingredients' : '';
+      case 'instructions':
+        return !value.trim() ? 'Instructions are required' : 
+               value.length < 50 ? 'Instructions should be more detailed (at least 50 characters)' : '';
+      case 'prepTime':
+        if (value && !/^\d+\s*(minutes|mins|min|hours|hrs|h)?$/i.test(value)) {
+          return 'Invalid format. Example: "15 minutes" or "1 hour"';
+        }
+        return '';
+      case 'cookTime':
+        if (value && !/^\d+\s*(minutes|mins|min|hours|hrs|h)?$/i.test(value)) {
+          return 'Invalid format. Example: "30 minutes" or "2 hours"';
+        }
+        return '';
+      case 'servings':
+        if (value && !/^\d+(-\d+)?\s*(servings|serving|people|person)?$/i.test(value)) {
+          return 'Invalid format. Example: "4 servings" or "2-4 people"';
+        }
+        return '';
+      default:
+        return '';
+    }
+  };
+
+  // Validate all fields
+  const validateForm = () => {
+    const newErrors = {};
+    let isValid = true;
+    
+    // Mark all required fields as touched
+    const allTouched = {
+      title: true,
+      category: true,
+      description: true,
+      ingredients: true,
+      instructions: true
+    };
+    
+    setTouched(prev => ({ ...prev, ...allTouched }));
+    
+    // Validate each field
+    Object.keys(allTouched).forEach(field => {
+      const error = validateField(field, recipe[field]);
+      if (error) {
+        newErrors[field] = error;
+        isValid = false;
+      }
+    });
+    
+    // Additional validation for fields that are filled but not required
+    ['prepTime', 'cookTime', 'servings'].forEach(field => {
+      if (recipe[field]) {
+        const error = validateField(field, recipe[field]);
+        if (error) {
+          newErrors[field] = error;
+          isValid = false;
+        }
+      }
+    });
+    
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  // Show toast notification
+  const showToast = (message, type = 'INFO') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: '', type: 'INFO' });
+    }, 3000);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate form before submission
+    if (!validateForm()) {
+      showToast('Please fix the validation errors before submitting', 'ERROR');
+      // Scroll to the first error
+      const firstErrorField = document.querySelector('.border-red-500');
+      if (firstErrorField) {
+        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
@@ -56,13 +159,18 @@ const AddRecipe = () => {
       const createdRecipe = await addRecipe(newRecipe);
       console.log('Recipe created successfully:', createdRecipe);
       
-      // Navigate to the newly created recipe
-      navigate(`/recipe/${createdRecipe.id}`, { 
-        state: { message: 'Recipe added successfully!' } 
-      });
+      // Show success toast
+      showToast('Recipe created successfully!', 'SUCCESS');
+      
+      // Navigate to the newly created recipe after a short delay
+      setTimeout(() => {
+        navigate(`/recipe/${createdRecipe.id}`, { 
+          state: { message: 'Recipe added successfully!', type: 'SUCCESS' } 
+        });
+      }, 1000);
     } catch (error) {
       console.error('Failed to add recipe:', error);
-      alert('Failed to add recipe. Please try again.');
+      showToast('Failed to add recipe. Please try again.', 'ERROR');
       setIsSubmitting(false);
     }
   };
@@ -86,6 +194,20 @@ const AddRecipe = () => {
       setPreviewImage(value);
       setSelectedFile(null); // Clear any selected file when URL is entered
     }
+    
+    // Validate on change if the field has been touched
+    if (touched[name]) {
+      const error = validateField(name, value);
+      setErrors(prev => ({ ...prev, [name]: error }));
+    }
+  };
+  
+  // Handle field blur for validation
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    setTouched(prev => ({ ...prev, [name]: true }));
+    const error = validateField(name, value);
+    setErrors(prev => ({ ...prev, [name]: error }));
   };
   
   // Handle file selection
@@ -95,13 +217,13 @@ const AddRecipe = () => {
     
     // Check if file is an image
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      showToast('Please select an image file', 'ERROR');
       return;
     }
     
     // Check file size (limit to 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image size should be less than 5MB');
+      showToast('Image size should be less than 5MB', 'ERROR');
       return;
     }
     
@@ -143,9 +265,82 @@ const AddRecipe = () => {
 
   // Difficulty levels
   const difficultyLevels = ['Easy', 'Medium', 'Hard', 'Chef Level'];
+  
+  // Toast notification component
+  const Toast = () => {
+    if (!toast.show) return null;
+    
+    let bgColor, textColor, icon;
+    switch (toast.type) {
+      case 'SUCCESS':
+        bgColor = 'bg-green-50';
+        textColor = 'text-green-800';
+        icon = (
+          <svg className="h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+        );
+        break;
+      case 'ERROR':
+        bgColor = 'bg-red-50';
+        textColor = 'text-red-800';
+        icon = (
+          <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+        );
+        break;
+      case 'WARNING':
+        bgColor = 'bg-yellow-50';
+        textColor = 'text-yellow-800';
+        icon = (
+          <svg className="h-5 w-5 text-yellow-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+        );
+        break;
+      default: // INFO
+        bgColor = 'bg-blue-50';
+        textColor = 'text-blue-800';
+        icon = (
+          <svg className="h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+          </svg>
+        );
+    }
+    
+    return (
+      <div className="fixed top-4 right-4 z-50 flex animate-fade-in-down">
+        <div className={`${bgColor} border-l-4 border-${toast.type.toLowerCase()}-500 p-4 rounded shadow-lg max-w-md`}>
+          <div className="flex">
+            <div className="flex-shrink-0">{icon}</div>
+            <div className="ml-3">
+              <p className={`text-sm ${textColor}`}>{toast.message}</p>
+            </div>
+            <div className="ml-auto pl-3">
+              <div className="-mx-1.5 -my-1.5">
+                <button
+                  onClick={() => setToast({ ...toast, show: false })}
+                  className={`inline-flex rounded-md p-1.5 text-${toast.type.toLowerCase()}-500 hover:bg-${toast.type.toLowerCase()}-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${toast.type.toLowerCase()}-500`}
+                >
+                  <span className="sr-only">Dismiss</span>
+                  <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="bg-gradient-to-b from-orange-50 to-orange-100 py-12 min-h-screen">
+      {/* Toast notification */}
+      <Toast />
+      
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="px-6 py-8 sm:p-10 border-b border-orange-100">
@@ -167,11 +362,17 @@ const AddRecipe = () => {
                     type="text"
                     value={recipe.title}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     required
                     placeholder="Give your recipe a catchy name"
                     disabled={isSubmitting}
-                    className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm"
+                    className={`w-full px-4 py-3 rounded-md border ${
+                      touched.title && errors.title ? 'border-red-500' : 'border-gray-300'
+                    } focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm`}
                   />
+                  {touched.title && errors.title && (
+                    <p className="mt-1 text-sm text-red-600">{errors.title}</p>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -184,15 +385,21 @@ const AddRecipe = () => {
                       name="category"
                       value={recipe.category}
                       onChange={handleChange}
+                      onBlur={handleBlur}
                       required
                       disabled={isSubmitting}
-                      className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm"
+                      className={`w-full px-4 py-3 rounded-md border ${
+                        touched.category && errors.category ? 'border-red-500' : 'border-gray-300'
+                      } focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm`}
                     >
                       <option value="">Select a category</option>
                       {categories.map((category) => (
                         <option key={category} value={category}>{category}</option>
                       ))}
                     </select>
+                    {touched.category && errors.category && (
+                      <p className="mt-1 text-sm text-red-600">{errors.category}</p>
+                    )}
                   </div>
                   
                   <div>
@@ -223,12 +430,18 @@ const AddRecipe = () => {
                     name="description"
                     value={recipe.description}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     required
                     placeholder="Brief description of your recipe"
                     disabled={isSubmitting}
                     rows="3"
-                    className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm"
+                    className={`w-full px-4 py-3 rounded-md border ${
+                      touched.description && errors.description ? 'border-red-500' : 'border-gray-300'
+                    } focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm`}
                   />
+                  {touched.description && errors.description && (
+                    <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+                  )}
                 </div>
               </div>
               
@@ -246,7 +459,10 @@ const AddRecipe = () => {
                         src={previewImage} 
                         alt="Recipe preview" 
                         className="absolute inset-0 w-full h-full object-cover"
-                        onError={() => setPreviewImage('')}
+                        onError={() => {
+                          setPreviewImage('');
+                          showToast('Invalid image URL or failed to load image', 'ERROR');
+                        }}
                       />
                       <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
                         Click to change
@@ -317,10 +533,16 @@ const AddRecipe = () => {
                     type="text"
                     value={recipe.prepTime}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="e.g. 15 minutes"
                     disabled={isSubmitting}
-                    className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm"
+                    className={`w-full px-4 py-2 rounded-md border ${
+                      touched.prepTime && errors.prepTime ? 'border-red-500' : 'border-gray-300'
+                    } focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm`}
                   />
+                  {touched.prepTime && errors.prepTime && (
+                    <p className="mt-1 text-sm text-red-600">{errors.prepTime}</p>
+                  )}
                 </div>
                 
                 <div>
@@ -333,10 +555,16 @@ const AddRecipe = () => {
                     type="text"
                     value={recipe.cookTime}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="e.g. 30 minutes"
                     disabled={isSubmitting}
-                    className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm"
+                    className={`w-full px-4 py-2 rounded-md border ${
+                      touched.cookTime && errors.cookTime ? 'border-red-500' : 'border-gray-300'
+                    } focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm`}
                   />
+                  {touched.cookTime && errors.cookTime && (
+                    <p className="mt-1 text-sm text-red-600">{errors.cookTime}</p>
+                  )}
                 </div>
                 
                 <div>
@@ -349,10 +577,16 @@ const AddRecipe = () => {
                     type="text"
                     value={recipe.servings}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="e.g. 4 servings"
                     disabled={isSubmitting}
-                    className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm"
+                    className={`w-full px-4 py-2 rounded-md border ${
+                      touched.servings && errors.servings ? 'border-red-500' : 'border-gray-300'
+                    } focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm`}
                   />
+                  {touched.servings && errors.servings && (
+                    <p className="mt-1 text-sm text-red-600">{errors.servings}</p>
+                  )}
                 </div>
               </div>
               
@@ -366,6 +600,7 @@ const AddRecipe = () => {
                     name="ingredients"
                     value={recipe.ingredients}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     required
                     placeholder="1 cup flour
 2 eggs
@@ -373,8 +608,13 @@ const AddRecipe = () => {
 ..."
                     disabled={isSubmitting}
                     rows="10"
-                    className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm font-mono text-sm"
+                    className={`w-full px-4 py-3 rounded-md border ${
+                      touched.ingredients && errors.ingredients ? 'border-red-500' : 'border-gray-300'
+                    } focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm font-mono text-sm`}
                   />
+                  {touched.ingredients && errors.ingredients && (
+                    <p className="mt-1 text-sm text-red-600">{errors.ingredients}</p>
+                  )}
                 </div>
                 
                 <div>
@@ -386,12 +626,18 @@ const AddRecipe = () => {
                     name="instructions"
                     value={recipe.instructions}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     required
                     placeholder="Step-by-step instructions for preparing the recipe..."
                     disabled={isSubmitting}
                     rows="10"
-                    className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm"
+                    className={`w-full px-4 py-3 rounded-md border ${
+                      touched.instructions && errors.instructions ? 'border-red-500' : 'border-gray-300'
+                    } focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm`}
                   />
+                  {touched.instructions && errors.instructions && (
+                    <p className="mt-1 text-sm text-red-600">{errors.instructions}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -417,7 +663,16 @@ const AddRecipe = () => {
             <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
               <button
                 type="button"
-                onClick={() => navigate('/recipes')}
+                onClick={() => {
+                  if (Object.values(recipe).some(value => value && value.toString().trim() !== '')) {
+                    // Show confirmation if form has any data
+                    if (window.confirm('Are you sure you want to discard your recipe?')) {
+                      navigate('/recipes');
+                    }
+                  } else {
+                    navigate('/recipes');
+                  }
+                }}
                 disabled={isSubmitting}
                 className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors"
               >

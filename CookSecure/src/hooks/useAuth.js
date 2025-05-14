@@ -2,6 +2,7 @@
 import { useState, useEffect, useContext, createContext } from 'react';
 import React from 'react';
 import axios from 'axios';
+import { updateUserProfile as apiUpdateUserProfile, updateLocalStorageUser } from '../services/users';
 
 // Create an auth context
 const AuthContext = createContext(null);
@@ -104,6 +105,36 @@ export const AuthProvider = (props) => {
     localStorage.removeItem('user');
   };
 
+  // Nouvelle fonction pour mettre à jour le profil utilisateur
+  const updateUserProfile = async (userData) => {
+    try {
+      if (!user || !user.id) {
+        throw new Error('User not authenticated');
+      }
+      
+      // Appeler l'API pour mettre à jour le profil
+      const updatedUserData = await apiUpdateUserProfile(user.id, userData);
+      
+      if (updatedUserData) {
+        // Créer un nouvel objet utilisateur avec les données mises à jour
+        const updatedUser = { ...user, ...userData };
+        
+        // Mettre à jour l'état local
+        setUser(updatedUser);
+        
+        // Mettre à jour localStorage
+        updateLocalStorageUser(userData);
+        
+        return { success: true, user: updatedUser };
+      }
+      
+      return { success: false, error: 'Failed to update user profile' };
+    } catch (error) {
+      console.error('Update profile error:', error);
+      return { success: false, error: error.message || 'Update failed' };
+    }
+  };
+
   // Check if user is a chef or admin (for creating/editing recipes)
   const canManageRecipes = () => {
     return user && (user.role === 'chef' || user.role === 'admin');
@@ -177,7 +208,8 @@ export const AuthProvider = (props) => {
     addToFavorites,
     removeFromFavorites,
     isFavorite,
-    getFavorites
+    getFavorites,
+    updateUserProfile // Exposer la nouvelle fonction
   };
 
   // Use React.createElement instead of JSX

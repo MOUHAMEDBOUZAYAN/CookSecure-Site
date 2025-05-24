@@ -62,6 +62,13 @@
       "password": "Simo123123",
       "name": "BOUZAYAN",
       "role": "user"
+    },
+    {
+      "id": "1747839187896",
+      "email": "simobouzi01@gmail.com",
+      "password": "Mouhamed12@",
+      "name": "MOUHAMED BOUZAYAN",
+      "role": "chef"
     }
   ],
   "recipes": []

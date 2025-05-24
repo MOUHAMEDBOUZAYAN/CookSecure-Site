@@ -8,15 +8,27 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [favorites, setFavorites] = useState([]);
 
-  // Check if user is already logged in from localStorage
+  // Check if user is already logged in from localStorage and load favorites
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
+      const storedFavorites = localStorage.getItem('favorites');
+      if (storedFavorites) {
+        setFavorites(JSON.parse(storedFavorites));
+      }
     }
     setLoading(false);
   }, []);
+
+  // Persist favorites to localStorage whenever it changes
+  useEffect(() => {
+    if (favorites !== null) { // Avoid saving initial null/empty state if not loaded yet
+      localStorage.setItem('favorites', JSON.stringify(favorites));
+    }
+  }, [favorites]);
 
   // Login function
   const login = async (email, password) => {
@@ -35,6 +47,15 @@ export const AuthProvider = ({ children }) => {
       // Save user to localStorage
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
+      
+      // Load user-specific favorites after login (if applicable)
+      // For this example, we'll just clear or load default favorites
+      const storedFavorites = localStorage.getItem('favorites');
+      if (storedFavorites) {
+         setFavorites(JSON.parse(storedFavorites));
+      } else {
+         setFavorites([]); // Start with empty favorites for new user
+      }
       
       return { success: true };
     } catch (error) {
@@ -60,6 +81,7 @@ export const AuthProvider = ({ children }) => {
       // Save user to localStorage
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
+      setFavorites([]); // New user starts with empty favorites
       
       return { success: true };
     } catch (error) {
@@ -71,7 +93,22 @@ export const AuthProvider = ({ children }) => {
   // Logout function
   const logout = () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('favorites');
     setUser(null);
+    setFavorites([]);
+  };
+
+  // Add recipe to favorites
+  const addFavorite = (recipe) => {
+    const recipeId = recipe?.idMeal || recipe?.id;
+    if (!favorites.some(fav => (fav.idMeal || fav.id) === recipeId)) {
+      setFavorites(prevFavorites => [...prevFavorites, recipe]);
+    }
+  };
+
+  // Remove recipe from favorites
+  const removeFavorite = (recipeId) => {
+    setFavorites(prevFavorites => prevFavorites.filter(fav => (fav.idMeal || fav.id) !== recipeId));
   };
 
   // Create the context value
@@ -80,7 +117,10 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    loading
+    loading,
+    favorites,
+    addFavorite,
+    removeFavorite
   };
 
   return (

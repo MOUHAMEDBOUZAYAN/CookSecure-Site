@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { searchRecipes } from '../services/recipes';
+import { ChevronLeft, ChevronRight, Search, ArrowRight, ChefHat, Clock, Users, Instagram, Mail, Bell, Menu, X } from 'lucide-react';
 
 const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -15,6 +16,7 @@ const Navbar = () => {
   const suggestionsRef = useRef(null);
   const searchInputRef = useRef(null);
   const profileMenuRef = useRef(null);
+  const mobileMenuRef = useRef(null);
   
   const navigate = useNavigate();
   const { user, logout, canManageRecipes, favorites } = useAuth();
@@ -39,13 +41,17 @@ const Navbar = () => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setProfileMenuOpen(false);
       }
+       // Close mobile menu if clicking outside and menu is open
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target) && event.target !== document.querySelector('.sm\:hidden button')) {
+         setMobileMenuOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [mobileMenuOpen]); // Add mobileMenuOpen to dependency array
 
   // Search suggestions effect
   useEffect(() => {
@@ -113,12 +119,21 @@ const Navbar = () => {
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
     if (!mobileMenuOpen) {
-      setShowSuggestions(false);
+      // Close profile menu when opening mobile menu
+      setProfileMenuOpen(false);
+       // Focus on search input when opening mobile menu
+       // if (searchInputRef.current) { // This ref is for desktop search
+       //   searchInputRef.current.focus();
+       // }
     }
   };
 
   const toggleProfileMenu = () => {
     setProfileMenuOpen(!profileMenuOpen);
+    // Close mobile menu when opening profile menu
+    if (!profileMenuOpen) {
+        setMobileMenuOpen(false);
+    }
   };
 
   const handleProfileClick = () => {
@@ -151,6 +166,7 @@ const Navbar = () => {
             </Link>
           </div>
 
+          {/* Desktop Search Bar */}
           <div className="hidden sm:ml-6 sm:flex items-center flex-1 max-w-lg mx-8 relative">
             <form onSubmit={handleSearch} className="w-full">
               <div className="relative">
@@ -163,9 +179,7 @@ const Navbar = () => {
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-300 shadow-sm hover:shadow"
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
+                  <Search className="h-5 w-5 text-gray-400" />
                 </div>
                 <button 
                   type="submit"
@@ -177,9 +191,7 @@ const Navbar = () => {
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                   ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+                    <Search className="h-5 w-5" />
                   )}
                 </button>
               </div>
@@ -190,7 +202,7 @@ const Navbar = () => {
                   ref={suggestionsRef}
                   className="absolute z-50 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 animate-fadeIn"
                 >
-                  <ul className="py-1">
+                  <ul className="py-1 max-h-60 overflow-y-auto">
                     {searchSuggestions.map((recipe) => (
                       <li 
                         key={recipe.idMeal || recipe.id} 
@@ -202,14 +214,14 @@ const Navbar = () => {
                             <img 
                               src={recipe.strMealThumb || recipe.image} 
                               alt="" 
-                              className="h-8 w-8 rounded-full object-cover mr-2" 
+                              className="h-8 w-8 rounded-full object-cover mr-2 flex-shrink-0" 
                               onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src = 'https://placehold.co/32x32/orange/white?text=R';
                               }}
                             />
                           )}
-                          <span className="font-medium">{recipe.strMeal || recipe.title}</span>
+                          <span className="font-medium text-gray-800 text-sm truncate">{recipe.strMeal || recipe.title}</span>
                         </div>
                       </li>
                     ))}
@@ -219,6 +231,7 @@ const Navbar = () => {
             </form>
           </div>
 
+          {/* Desktop Navigation and Profile/Auth Links */}
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             <div className="flex space-x-1">
               <Link to="/" className="group px-3 py-2 flex items-center text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-md transition-colors duration-200">
@@ -250,7 +263,7 @@ const Navbar = () => {
               )}
               
               {/* Show Add Recipe link only to chefs and admins */}
-              {canManageRecipes && canManageRecipes() && (
+              {canManageRecipes() && (
                 <Link to="/add-recipe" className="group px-3 py-2 flex items-center text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-md transition-colors duration-200">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-gray-500 group-hover:text-orange-500 transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -280,7 +293,7 @@ const Navbar = () => {
                   
                   {/* Dropdown menu */}
                   <div 
-                    className={`absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg overflow-hidden z-10 transition-all duration-200 ${
+                    className={`absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg overflow-hidden z-10 transition-all duration-200 transform origin-top-right ${
                       profileMenuOpen 
                         ? 'opacity-100 scale-100 pointer-events-auto' 
                         : 'opacity-0 scale-95 pointer-events-none'
@@ -319,42 +332,27 @@ const Navbar = () => {
             </div>
           </div>
 
+          {/* Mobile menu button */}
           <div className="flex items-center sm:hidden">
             <button
               onClick={toggleMobileMenu}
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-orange-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-orange-500 transition-colors"
             >
               <span className="sr-only">{mobileMenuOpen ? 'Close menu' : 'Open menu'}</span>
-              <svg
-                className={`${mobileMenuOpen ? 'hidden' : 'block'} h-6 w-6`}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-              <svg
-                className={`${mobileMenuOpen ? 'block' : 'hidden'} h-6 w-6`}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <Menu className={`${mobileMenuOpen ? 'hidden' : 'block'} h-6 w-6`} />
+              <X className={`${mobileMenuOpen ? 'block' : 'hidden'} h-6 w-6`} />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile menu panel */}
       <div 
-        className={`${mobileMenuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0 pointer-events-none'} overflow-hidden transition-all duration-300 sm:hidden bg-white shadow-lg`}
+        ref={mobileMenuRef}
+        className={`sm:hidden ${mobileMenuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0 pointer-events-none'} overflow-hidden transition-all duration-300 bg-white shadow-lg`}
       >
         <div className="px-4 pt-2 pb-3 space-y-1">
+          {/* Mobile Search Bar */}
           <div className="relative mb-2 px-2">
             <form onSubmit={handleSearch} className="relative">
               <input
@@ -365,9 +363,7 @@ const Navbar = () => {
                 className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-300 shadow-sm"
               />
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                <Search className="h-5 w-5 text-gray-400" />
               </div>
               <button 
                 type="submit"
@@ -379,16 +375,14 @@ const Navbar = () => {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
+                  <Search className="h-5 w-5" />
                 )}
               </button>
             </form>
             
             {/* Mobile search suggestions */}
             {showSuggestions && searchSuggestions.length > 0 && (
-              <div className="absolute left-0 right-0 mt-1 bg-white rounded-md shadow-lg border border-gray-200 z-50 mx-2">
+              <div className="absolute left-0 right-0 mt-1 bg-white rounded-md shadow-lg border border-gray-200 z-50 mx-2 max-h-60 overflow-y-auto">
                 <ul className="py-1">
                   {searchSuggestions.map((recipe) => (
                     <li 
@@ -401,14 +395,14 @@ const Navbar = () => {
                           <img 
                             src={recipe.strMealThumb || recipe.image} 
                             alt="" 
-                            className="h-8 w-8 rounded-full object-cover mr-2" 
+                            className="h-8 w-8 rounded-full object-cover mr-2 flex-shrink-0" 
                             onError={(e) => {
                               e.target.onerror = null;
                               e.target.src = 'https://placehold.co/32x32/orange/white?text=R';
                             }}
                           />
                         )}
-                        <span className="font-medium">{recipe.strMeal || recipe.title}</span>
+                        <span className="font-medium text-gray-800 text-sm truncate">{recipe.strMeal || recipe.title}</span>
                       </div>
                     </li>
                   ))}
@@ -417,6 +411,7 @@ const Navbar = () => {
             )}
           </div>
           
+          {/* Mobile Navigation Links */}
           <Link 
             to="/" 
             className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 flex items-center transition-colors"
@@ -458,7 +453,7 @@ const Navbar = () => {
           )}
           
           {/* Show Add Recipe link only to chefs and admins */}
-          {canManageRecipes && canManageRecipes() && (
+          {canManageRecipes() && (
             <Link 
               to="/add-recipe" 
               className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 flex items-center transition-colors"
@@ -471,6 +466,7 @@ const Navbar = () => {
             </Link>
           )}
           
+          {/* Mobile Profile/Auth Links */}
           <div className="pt-4 mt-2 border-t border-gray-200">
             {user ? (
               <>
@@ -514,10 +510,10 @@ const Navbar = () => {
                 </Link>
                 <Link 
                   to="/register" 
-                  className="block px-3 py-2 mt-1 rounded-md text-base font-medium text-white bg-gradient-to-r from-orange-500 to-red-500 flex items-center transition-all hover:shadow-md"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 flex items-center transition-colors mt-1"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                   </svg>
                   Sign Up

@@ -56,6 +56,10 @@ export const AuthProvider = (props) => {
       const storedFavorites = localStorage.getItem(`favorites_${userWithoutPassword.id}`);
       if (storedFavorites) {
         setFavorites(JSON.parse(storedFavorites));
+      } else {
+         // Initialize empty favorites if none exist
+         localStorage.setItem(`favorites_${userWithoutPassword.id}`, JSON.stringify([]));
+         setFavorites([]);
       }
       
       return { success: true, user: userWithoutPassword };
@@ -89,6 +93,7 @@ export const AuthProvider = (props) => {
       
       // Initialize empty favorites for the new user
       localStorage.setItem(`favorites_${newUser.id}`, JSON.stringify([]));
+      setFavorites([]); // Set local state to empty
       
       // Return success without logging in
       return { success: true, user: response.data };
@@ -150,7 +155,7 @@ export const AuthProvider = (props) => {
   };
 
   // Add recipe to favorites
-  const addToFavorites = (recipe) => {
+  const addFavorite = (recipe) => {
     if (!user) return false;
     
     const recipeId = recipe.idMeal || recipe.id;
@@ -170,7 +175,7 @@ export const AuthProvider = (props) => {
   };
 
   // Remove recipe from favorites
-  const removeFromFavorites = (recipeId) => {
+  const removeFavorite = (recipeId) => {
     if (!user) return false;
     
     const newFavorites = favorites.filter(recipe => {
@@ -188,6 +193,9 @@ export const AuthProvider = (props) => {
 
   // Check if a recipe is in favorites
   const isFavorite = (recipeId) => {
+    // Ensure user is logged in and favorites is loaded before checking
+    if (!user || favorites === null) return false;
+    
     return favorites.some(recipe => (recipe.idMeal || recipe.id) === recipeId);
   };
 
@@ -202,29 +210,28 @@ export const AuthProvider = (props) => {
     register,
     logout,
     loading,
+    updateUserProfile,
     canManageRecipes,
     canEditRecipe,
-    favorites,
-    addToFavorites,
-    removeFromFavorites,
     isFavorite,
     getFavorites,
-    updateUserProfile // Exposer la nouvelle fonction
+    favorites,
+    addFavorite,
+    removeFavorite
   };
 
-  // Use React.createElement instead of JSX
-  return React.createElement(
-    AuthContext.Provider,
-    { value: value },
-    props.children
-  );
+  // Using React.createElement to avoid JSX parsing issues if file extension is .js
+  return React.createElement(AuthContext.Provider, { value: value }, props.children);
 };
 
-// Hook to use the auth context
+// Custom hook to use the auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === null) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
+
+// Remove the default export from AuthContext.jsx as the hook is now here
+// export default AuthContext;
